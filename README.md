@@ -7,7 +7,7 @@ Installation
 ============
 
 ```ruby
-gem 'has_dynamic_columns'
+gem 'has_dynamic_columns', :git => 'git://github.com/butchmarshall/has_dynamic_columns.git'
 ```
 
 The Active Record migration is required to create the has_dynamic_columns table. You can create that table by

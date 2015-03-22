@@ -1,4 +1,4 @@
-class HasDynamicColumnsMigration < ActiveRecord::Migration
+class CreateHasDynamicColumns < ActiveRecord::Migration
 	def self.up
 		create_table :dynamic_columns do |t|
 			t.integer :field_scope_id

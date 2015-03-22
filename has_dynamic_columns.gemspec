@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'has_dynamic_fields/version'
+require 'has_dynamic_columns/version'
 
 Gem::Specification.new do |spec|
-	spec.name          = "has_dynamic_fields"
-	spec.version       = HasDynamicFields::VERSION
+	spec.name          = "has_dynamic_columns"
+	spec.version       = HasDynamicColumns::VERSION
 	spec.authors       = ["Butch Marshall"]
 	spec.email         = ["butch.a.marshall@gmail.com"]
 	spec.summary       = "Dynamic fields for activerecord models"

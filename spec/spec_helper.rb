@@ -31,7 +31,7 @@ ActiveRecord::Migration.verbose = false
 
 require "generators/has_dynamic_columns/templates/migration"
 ActiveRecord::Schema.define do
-	HasDynamicColumnsMigration.up
+	CreateHasDynamicColumns.up
 
 	create_table :accounts, force: true do |t|
 		t.string :name
@@ -57,12 +57,12 @@ end
 class Customer < ActiveRecord::Base
 	belongs_to :account
 	has_many :customer_addresses
-	has_dynamic_columns field_scope: "account", dynamic_type: "Address", as: "fields"
+	has_dynamic_columns field_scope: "account", dynamic_type: "Customer", as: "fields"
 end
 
 class CustomerAddress < ActiveRecord::Base
 	belongs_to :customer
-	has_dynamic_columns field_scope: "customer.account"
+	has_dynamic_columns field_scope: "customer.account", dynamic_type: "CustomerAddress", as: "fields"
 end
 
 

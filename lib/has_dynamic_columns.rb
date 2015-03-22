@@ -65,9 +65,14 @@ module HasDynamicColumns
 						end
 
 						def #{configuration[:as]}
-							self.activerecord_#{configuration[:as]}_data.each_with_object({}) { |i,h|
+							h = {}
+							self.field_scope_#{configuration[:as]}.each { |i|
+								h[i.key] = nil
+							}
+							self.activerecord_#{configuration[:as]}_data.each { |i|
 								h[i.dynamic_column.key] = i.value unless !i.dynamic_column
 							}
+							h
 						end
 
 						def #{configuration[:as].to_s.singularize}_keys
