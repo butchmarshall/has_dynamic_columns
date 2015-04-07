@@ -10,6 +10,7 @@ class CreateHasDynamicColumns < ActiveRecord::Migration
 
 			t.timestamps
 		end
+		add_index(:dynamic_columns, [:field_scope_id, :field_scope_type, :dynamic_type], name: 'index1')
 		create_table :dynamic_column_validations do |t|
 			t.integer :dynamic_column_id
 
@@ -33,6 +34,7 @@ class CreateHasDynamicColumns < ActiveRecord::Migration
 
 			t.timestamps
 		end
+		add_index(:dynamic_column_data, [:owner_id, :owner_type, :dynamic_column_id], name: 'index1')
 	end
 
 	def self.down
