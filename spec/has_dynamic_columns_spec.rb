@@ -45,6 +45,20 @@ describe HasDynamicColumns do
 		end
 
 		context 'when it is valid' do
+			it 'should not find john' do
+				c = customer
+				c.save
+				a = c.account
+
+				expect(a.customers.dynamic_where(a, { first_name: "John" }).length).to eq(0)
+			end
+			it 'should find me' do
+				c = customer
+				c.save
+				a = c.account
+
+				expect(a.customers.dynamic_where(a, { first_name: "Butch" }).length).to eq(1)
+			end
 			it 'should return fields as json' do
 				expect(customer.as_json["customer"]["fields"]).to eq({
 					"first_name" => "Butch",

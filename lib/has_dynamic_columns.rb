@@ -40,6 +40,105 @@ module HasDynamicColumns
 					validate :validate_dynamic_column_data
 
 					public
+						# Order by dynamic columns
+						def self.dynamic_order(field_scope, key, direction = :asc)
+							table = self.name.constantize.arel_table
+							column_table = HasDynamicColumns::DynamicColumn.arel_table.alias("dynamic_order_"+key.to_s)
+							column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_order_data_"+key.to_s)
+
+							field_scope_type = field_scope.class.name.constantize.to_s
+							dynamic_type = self.name.constantize.to_s
+							field_scope_id = field_scope.id
+
+							# Join on the column with the key
+							column_table_join_on = column_table
+													.create_on(
+														column_table[:field_scope_type].eq(field_scope_type).and(
+															column_table[:dynamic_type].eq(dynamic_type)
+														).and(
+															column_table[:field_scope_id].eq(field_scope_id)
+														).and(
+															column_table[:key].eq(key)
+														)
+													)
+
+							column_table_join = table.create_join(column_table, column_table_join_on)
+							query = joins(column_table_join)
+
+							# Join on all the data with the provided key
+							column_table_datum_join_on = column_datum_table
+													.create_on(
+														column_datum_table[:owner_id].eq(table[:id]).and(
+															column_datum_table[:owner_type].eq(dynamic_type)
+														).and(
+															column_datum_table[:dynamic_column_id].eq(column_table[:id])
+														)
+													)
+
+							column_table_datum_join = table.create_join(column_datum_table, column_table_datum_join_on)
+							query = query.joins(column_table_datum_join)
+
+							# Order
+							query = query.order(column_datum_table[:value].send(direction))
+
+							# Group required - we have many rows
+							query = query.group(table[:id])
+
+							query
+						end
+						# Find by dynamic columns
+						def self.dynamic_where(*args)
+							field_scope = args[0]
+							options = args.extract_options!
+
+							field_scope_type = field_scope.class.name.constantize.to_s
+							dynamic_type = self.name.constantize.to_s
+							field_scope_id = field_scope.id
+
+							table = self.name.constantize.arel_table
+							query = nil
+
+							# Need to join on each of the keys we are performing where on
+							options.each { |key, value|
+								column_table = HasDynamicColumns::DynamicColumn.arel_table.alias("dynamic_where_"+key.to_s)
+								column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_where_data_"+key.to_s)
+
+								# Join on the column with the key
+								column_table_join_on = column_table
+														.create_on(
+															column_table[:field_scope_type].eq(field_scope_type).and(
+																column_table[:dynamic_type].eq(dynamic_type)
+															).and(
+																column_table[:field_scope_id].eq(field_scope_id)
+															).and(
+																column_table[:key].eq(key)
+															)
+														)
+
+								column_table_join = table.create_join(column_table, column_table_join_on)
+								query = (query.nil?)? joins(column_table_join) : query.join(column_table_join)
+
+								# Join on all the data with the provided key
+								column_table_datum_join_on = column_datum_table
+														.create_on(
+															column_datum_table[:owner_id].eq(table[:id]).and(
+																column_datum_table[:owner_type].eq(dynamic_type)
+															).and(
+																column_datum_table[:dynamic_column_id].eq(column_table[:id])
+															).and(
+																column_datum_table[:value].eq(value)
+															)
+														)
+
+								column_table_datum_join = table.create_join(column_datum_table, column_table_datum_join_on)
+								query = query.joins(column_table_datum_join)
+							}
+							# Group required - we have many rows
+							query = (query.nil?)? group(table[:id]) : query.group(table[:id])
+
+							query
+						end
+
 						def as_json(*args)
 							json = super(*args)
 							json[json.keys.first][self.dynamic_columns_as] = self.send(self.dynamic_columns_as)
