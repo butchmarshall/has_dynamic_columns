@@ -126,7 +126,7 @@ module HasDynamicColumns
 															).and(
 																column_datum_table[:dynamic_column_id].eq(column_table[:id])
 															).and(
-																column_datum_table[:value].eq(value)
+																column_datum_table[:value].matches("%"+value+"%")
 															)
 														)
 
