@@ -101,6 +101,9 @@ module HasDynamicColumns
 
 							# Need to join on each of the keys we are performing where on
 							options.each { |key, value|
+								# Don't bother with empty values
+								next if value.to_s.empty?
+
 								column_table = HasDynamicColumns::DynamicColumn.arel_table.alias("dynamic_where_"+key.to_s)
 								column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_where_data_"+key.to_s)
 
