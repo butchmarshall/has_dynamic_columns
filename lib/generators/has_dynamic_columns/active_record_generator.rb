@@ -12,7 +12,7 @@ module HasDynamicColumns
 		source_paths << File.join(File.dirname(__FILE__), "templates")
 
 		def create_migration_file
-			migration_template "migration.rb", "db/migrate/has_dynamic_columns.rb"
+			migration_template "migration.rb", "db/migrate/add_has_dynamic_columns.rb"
 		end
 
 		def self.next_migration_number(dirname)

@@ -31,7 +31,7 @@ ActiveRecord::Migration.verbose = false
 
 require "generators/has_dynamic_columns/templates/migration"
 ActiveRecord::Schema.define do
-	CreateHasDynamicColumns.up
+	AddHasDynamicColumns.up
 
 	create_table :accounts, force: true do |t|
 		t.string :name
