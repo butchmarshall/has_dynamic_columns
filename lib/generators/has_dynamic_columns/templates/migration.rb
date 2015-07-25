@@ -34,7 +34,7 @@ class CreateHasDynamicColumns < ActiveRecord::Migration
 
 			t.timestamps
 		end
-		add_index(:dynamic_column_data, [:owner_id, :owner_type, :dynamic_column_id], name: 'index1')
+		add_index(:dynamic_column_data, [:owner_id, :owner_type, :dynamic_column_id], name: 'index2')
 	end
 
 	def self.down

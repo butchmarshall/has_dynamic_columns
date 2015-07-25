@@ -142,7 +142,14 @@ module HasDynamicColumns
 
 						def as_json(*args)
 							json = super(*args)
-							json[json.keys.first][self.dynamic_columns_as] = self.send(self.dynamic_columns_as)
+							options = args.extract_options!
+
+							if !options[:root].nil?
+								json[options[:root]][self.dynamic_columns_as] = self.send(self.dynamic_columns_as)
+							else
+								json[self.dynamic_columns_as] = self.send(self.dynamic_columns_as)
+							end
+
 							json
 						end
 

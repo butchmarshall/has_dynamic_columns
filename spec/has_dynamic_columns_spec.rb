@@ -60,7 +60,9 @@ describe HasDynamicColumns do
 				expect(a.customers.dynamic_where(a, { first_name: "Butch" }).length).to eq(1)
 			end
 			it 'should return fields as json' do
-				expect(customer.as_json["customer"]["fields"]).to eq({
+				json = customer.as_json(:root => "customer")
+
+				expect(json["customer"]["fields"]).to eq({
 					"first_name" => "Butch",
 					"last_name" => "Marshall",
 					"email" => "butch.a.marshall@gmail.com",
@@ -82,7 +84,9 @@ describe HasDynamicColumns do
 				end
 
 				it 'should return nil for unset fields' do
-					expect(customer_address.as_json["customer_address"]["fields"]).to eq({
+					json = customer_address.as_json(:root => "customer_address")
+					
+					expect(json["customer_address"]["fields"]).to eq({
 						"address_1" => nil,
 						"address_2" => nil,
 						"country" => "canada",
@@ -105,7 +109,9 @@ describe HasDynamicColumns do
 				end
 
 				it 'should return parent customer fields as json' do
-					expect(customer_address.customer.as_json["customer"]["fields"]).to eq({
+					json = customer_address.customer.as_json(:root => "customer")
+					
+					expect(json["customer"]["fields"]).to eq({
 						"first_name" => "Butch",
 						"last_name" => "Marshall",
 						"email" => "butch.a.marshall@gmail.com",
@@ -113,7 +119,8 @@ describe HasDynamicColumns do
 				end
 
 				it 'should return fields as json' do
-					expect(customer_address.as_json["customer_address"]["fields"]).to eq({
+					json = customer_address.as_json(:root => "customer_address")
+					expect(json["customer_address"]["fields"]).to eq({
 						"address_1" => "555 Bloor Street",
 						"address_2" => nil,
 						"country" => "canada",
@@ -137,7 +144,9 @@ describe HasDynamicColumns do
 					sub.save
 	
 					customer = CustomerAddress.find(sub.id)
-					expect(customer.as_json["customer_address"]["fields"]).to eq({
+					json = customer.as_json(:root => "customer_address")
+					
+					expect(json["customer_address"]["fields"]).to eq({
 						"address_1" => "555 Bloor Street",
 						"address_2" => nil,
 						"country" => "canada",
