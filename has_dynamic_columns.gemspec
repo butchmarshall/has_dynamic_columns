@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 	spec.email         = ["butch.a.marshall@gmail.com"]
 	spec.summary       = "Dynamic fields for activerecord models"
 	spec.description   = "Adds ability to put dynamic fields into active record models"
-	spec.homepage      = ""
+	spec.homepage      = "https://github.com/butchmarshall/has_dynamic_columns"
 	spec.license       = "MIT"
 
 	spec.files         = `git ls-files -z`.split("\x0")

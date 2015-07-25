@@ -86,6 +86,7 @@ module HasDynamicColumns
 
 							query
 						end
+
 						# Find by dynamic columns
 						def self.dynamic_where(*args)
 							field_scope = args[0]
