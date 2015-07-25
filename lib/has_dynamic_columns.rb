@@ -120,7 +120,7 @@ module HasDynamicColumns
 														)
 
 								column_table_join = table.create_join(column_table, column_table_join_on)
-								query = (query.nil?)? joins(column_table_join) : query.join(column_table_join)
+								query = (query.nil?)? joins(column_table_join) : query.joins(column_table_join)
 
 								# Join on all the data with the provided key
 								column_table_datum_join_on = column_datum_table

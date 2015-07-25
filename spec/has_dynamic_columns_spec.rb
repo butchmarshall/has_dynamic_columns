@@ -68,6 +68,14 @@ describe HasDynamicColumns do
 				expect(a.customers.dynamic_where(a, { first_name: "Butch", last_name: "" }).length).to eq(1)
 			end
 
+			it 'should find me by first and last name' do
+				c = customer
+				c.save
+				a = c.account
+
+				expect(a.customers.dynamic_where(a, { first_name: "Butch", last_name: "Marshall" }).length).to eq(1)
+			end
+
 			it 'should return fields as json' do
 				json = customer.as_json(:root => "customer")
 
