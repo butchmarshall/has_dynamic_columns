@@ -29,7 +29,8 @@ module HasDynamicColumns
 								as: :field_scope
 					has_many :activerecord_#{configuration[:as]}_data,
 								class_name: "HasDynamicColumns::DynamicColumnDatum",
-								as: :owner
+								as: :owner,
+								autosave: true
 
 					# only add to attr_accessible
 					# if the class has some mass_assignment_protection

@@ -8,6 +8,7 @@ describe HasDynamicColumns do
 		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "first_name", :data_type => "string")
 		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "last_name", :data_type => "string")
 		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "email", :data_type => "string")
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "trusted", :data_type => "boolean")
 
 		# Setup dynamic fields for CustomerAddress under this account
 		account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "address_1", :data_type => "string")
@@ -41,6 +42,7 @@ describe HasDynamicColumns do
 				"first_name" => "Butch",
 				"last_name" => "Marshall",
 				"email" => "butch.a.marshall@gmail.com",
+				"trusted" => true,
 			}
 		end
 
@@ -83,7 +85,28 @@ describe HasDynamicColumns do
 					"first_name" => "Butch",
 					"last_name" => "Marshall",
 					"email" => "butch.a.marshall@gmail.com",
+					"trusted" => true,
 				})
+			end
+
+			it 'should get and set boolean values properly' do
+				c = customer
+
+				c.fields = { "trusted" => true }
+				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
+				c.save
+				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
+
+				c = Customer.find(c.id)
+				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
+
+				c.fields = { "trusted" => false }
+				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
+				c.save
+				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
+
+				c = Customer.find(c.id)
+				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
 			end
 		end
 
@@ -132,6 +155,7 @@ describe HasDynamicColumns do
 						"first_name" => "Butch",
 						"last_name" => "Marshall",
 						"email" => "butch.a.marshall@gmail.com",
+						"trusted" => true,
 					})
 				end
 

@@ -15,7 +15,12 @@ module HasDynamicColumns
 					when "datetime"
 						self[:value]
 					when "boolean"
-						(self[:value] == 1)
+
+						if self[:value].is_a?(TrueClass) || self[:value].is_a?(FalseClass)
+							self[:value]
+						else
+							self[:value].to_i === 1
+						end
 					when "integer"
 						self[:value]
 					when "date"
@@ -44,7 +49,7 @@ module HasDynamicColumns
 					when "datetime"
 						self[:value] = v
 					when "boolean"
-						self[:value] = v
+						self[:value] = (v)? 1 : 0
 					when "integer"
 						self[:value] = v
 					when "date"
