@@ -87,6 +87,7 @@ module HasDynamicColumns
 									# If any errors exist - add them
 									if validation_errors.length > 0
 										if dynamic_column.nil?
+											# TODO - fix  from the has_many - need to fix validations
 											#errors.add(:dynamic_columns, { "unknown" => validation_errors })
 										else
 											errors.add(:dynamic_columns, { dynamic_column.key.to_s => validation_errors })
@@ -104,20 +105,26 @@ module HasDynamicColumns
 							column_table = HasDynamicColumns::DynamicColumn.arel_table.alias("dynamic_order_"+key.to_s)
 							column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_order_data_"+key.to_s)
 
-							field_scope_type = field_scope.class.name.constantize.to_s
+							field_scope_id = (!field_scope.nil?) ? field_scope.id : nil
+							field_scope_type = (!field_scope.nil?) ? field_scope.class.name.constantize.to_s : nil
 							dynamic_type = self.name.constantize.to_s
-							field_scope_id = field_scope.id
 
 							# Join on the column with the key
+							on_query = column_table[:key].eq(key)
+							if !field_scope_type.nil?
+								on_query = on_query.and(
+									column_table[:field_scope_type].eq(field_scope_type)
+								)
+							end
+							if !field_scope_id.nil?
+								on_query = on_query.and(
+									column_table[:field_scope_id].eq(field_scope_id)
+								)
+							end
+
 							column_table_join_on = column_table
 													.create_on(
-														column_table[:field_scope_type].eq(field_scope_type).and(
-															column_table[:dynamic_type].eq(dynamic_type)
-														).and(
-															column_table[:field_scope_id].eq(field_scope_id)
-														).and(
-															column_table[:key].eq(key)
-														)
+														on_query
 													)
 
 							column_table_join = table.create_join(column_table, column_table_join_on)
@@ -147,12 +154,12 @@ module HasDynamicColumns
 
 						# Find by dynamic columns
 						def self.dynamic_where(*args)
-							field_scope = args[0]
+							field_scope = args[0].is_a?(Hash) ? nil : args[0]
 							options = args.extract_options!
 
-							field_scope_type = field_scope.class.name.constantize.to_s
+							field_scope_id = (!field_scope.nil?) ? field_scope.id : nil
+							field_scope_type = (!field_scope.nil?) ? field_scope.class.name.constantize.to_s : nil
 							dynamic_type = self.name.constantize.to_s
-							field_scope_id = field_scope.id
 
 							table = self.name.constantize.arel_table
 							query = nil
@@ -166,15 +173,21 @@ module HasDynamicColumns
 								column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_where_data_"+key.to_s)
 
 								# Join on the column with the key
+								on_query = column_table[:key].eq(key)
+								if !field_scope_type.nil?
+									on_query = on_query.and(
+										column_table[:field_scope_type].eq(field_scope_type)
+									)
+								end
+								if !field_scope_id.nil?
+									on_query = on_query.and(
+										column_table[:field_scope_id].eq(field_scope_id)
+									)
+								end
+
 								column_table_join_on = column_table
 														.create_on(
-															column_table[:field_scope_type].eq(field_scope_type).and(
-																column_table[:dynamic_type].eq(dynamic_type)
-															).and(
-																column_table[:field_scope_id].eq(field_scope_id)
-															).and(
-																column_table[:key].eq(key)
-															)
+															on_query
 														)
 
 								column_table_join = table.create_join(column_table, column_table_join_on)
@@ -291,10 +304,6 @@ module HasDynamicColumns
 		end
 
 		module InstanceMethods
-			# Validate all the dynamic_column_data at once
-			def validate_dynamic_column_data(field_scope = nil)
-
-			end
 		end
 	end
 end

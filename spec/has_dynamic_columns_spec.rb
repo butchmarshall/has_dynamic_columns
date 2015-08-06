@@ -67,6 +67,56 @@ describe HasDynamicColumns do
 		context 'when it has a defined has_many relationship' do
 
 			context 'when it has_many categories' do
+				it 'should work with dynamic_where' do
+					product1 = Product.new(:name => "Product #1", :account => account)
+					product2 = Product.new(:name => "Product #2", :account => account)
+
+					# Product 1 is associated with both categories
+					product1.categories << @category1
+					product1.categories << @category2
+					# Product 2 is only associated with a single category
+					product2.categories << @category1
+
+					product1.product_fields = {
+						"rarity" => "very rare"
+					}
+					product2.product_fields = {
+						"rarity" => "kinda rare"
+					}
+
+					product1.category_fields = {
+						"vin_number" => "abc",
+						"serial_number" => "456"
+					}
+					product2.category_fields = {
+						"vin_number" => "cde",
+					}
+					product1.save
+					product2.save
+
+					result = Product.dynamic_where({ vin_number: "abc" })
+					expect(result.length).to eq(1)
+					expect(result.first).to eq(product1)
+
+					result = Product.dynamic_where({ vin_number: "cde" })
+					expect(result.length).to eq(1)
+					expect(result.first).to eq(product2)
+
+					result = Product.dynamic_where({ rarity: "rare" })
+					expect(result.length).to eq(2)
+					expect(result.first).to eq(product1)
+					expect(result.last).to eq(product2)
+
+					result = Product.dynamic_where({ rarity: "rare", vin_number: "cde" })
+					expect(result.length).to eq(1)
+					expect(result.first).to eq(product2)
+
+					result = Product.dynamic_where({ rarity: "rare", vin_number: "cde", serial_number: "456" })
+					expect(result.length).to eq(0)
+
+					result = Product.dynamic_where({ rarity: "rare", vin_number: "c", serial_number: "456" })
+					expect(result.length).to eq(1)
+				end
 
 				it 'should return empty category_fields when no categories associated' do
 					json = product.as_json
