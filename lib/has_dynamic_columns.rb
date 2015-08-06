@@ -22,12 +22,18 @@ module HasDynamicColumns
 		        configuration.update(options) if options.is_a?(Hash)
 
 				class_eval <<-EOV
+					alias_method :as_json_before_#{configuration[:as]}, :as_json
+
+					# Store all our configurations for usage later
+					@@has_dynamic_columns_configurations ||= []		        
+			        @@has_dynamic_columns_configurations << #{configuration}
+
 					include ::HasDynamicColumns::Model::InstanceMethods
 
-					has_many :activerecord_#{configuration[:as]},
+					has_many :activerecord_dynamic_columns,
 								class_name: "HasDynamicColumns::DynamicColumn",
 								as: :field_scope
-					has_many :activerecord_#{configuration[:as]}_data,
+					has_many :activerecord_dynamic_column_data,
 								class_name: "HasDynamicColumns::DynamicColumnDatum",
 								as: :owner,
 								autosave: true
@@ -38,7 +44,58 @@ module HasDynamicColumns
 						#attr_accessible :#{configuration[:column]}
 					end
 
-					validate :validate_dynamic_column_data
+					validate do |field_scope|
+						field_scope = self.get_#{configuration[:as]}_field_scope
+
+						if field_scope
+							# has_many association
+							if field_scope.respond_to?(:select) && field_scope.respond_to?(:collect)
+
+							# belongs_to association
+							else
+								# All the fields defined on the parent model
+								dynamic_columns = field_scope.send("activerecord_dynamic_columns")
+
+								self.send("activerecord_dynamic_column_data").each { |dynamic_column_datum|
+									# Collect all validation errors
+									validation_errors = []
+
+									if dynamic_column_datum.dynamic_column_option_id == -1
+										validation_errors << "invalid_option"
+									end
+
+									# Find the dynamic_column defined for this datum
+									dynamic_column = nil
+									dynamic_columns.each { |i|
+										if i == dynamic_column_datum.dynamic_column
+											dynamic_column = i
+											break
+										end
+									}
+									# We have a dynamic_column - validate
+									if dynamic_column
+										dynamic_column.dynamic_column_validations.each { |validation|
+											if !validation.is_valid?(dynamic_column_datum.value.to_s)
+												validation_errors << validation.error
+											end
+										}
+									else
+										# No field found - this is probably bad - should we throw an error?
+										validation_errors << "not_found"
+									end
+
+									# If any errors exist - add them
+									if validation_errors.length > 0
+										if dynamic_column.nil?
+											#errors.add(:dynamic_columns, { "unknown" => validation_errors })
+										else
+											errors.add(:dynamic_columns, { dynamic_column.key.to_s => validation_errors })
+										end
+									end
+								}
+							end
+						end
+					end
 
 					public
 						# Order by dynamic columns
@@ -148,11 +205,13 @@ module HasDynamicColumns
 							json = super(*args)
 							options = args.extract_options!
 
-							if !options[:root].nil?
-								json[options[:root]][self.dynamic_columns_as] = self.send(self.dynamic_columns_as)
-							else
-								json[self.dynamic_columns_as] = self.send(self.dynamic_columns_as)
-							end
+							@@has_dynamic_columns_configurations.each { |config|
+								if !options[:root].nil?
+									json[options[:root]][config[:as].to_s] = self.send(config[:as].to_s)
+								else
+									json[config[:as].to_s] = self.send(config[:as].to_s)
+								end
+							}
 
 							json
 						end
@@ -167,10 +226,10 @@ module HasDynamicColumns
 								dynamic_column = self.#{configuration[:as].to_s.singularize}_key_to_dynamic_column(key)
 
 								# We already have this key in database
-								if existing = self.activerecord_#{configuration[:as]}_data.select { |i| i.dynamic_column == dynamic_column }.first
+								if existing = self.activerecord_dynamic_column_data.select { |i| i.dynamic_column == dynamic_column }.first
 									existing.value = value
 								else
-									self.activerecord_#{configuration[:as]}_data.build(:dynamic_column => dynamic_column, :value => value)
+									self.activerecord_dynamic_column_data.build(:dynamic_column => dynamic_column, :value => value)
 								end
 							}
 						end
@@ -180,9 +239,11 @@ module HasDynamicColumns
 							self.field_scope_#{configuration[:as]}.each { |i|
 								h[i.key] = nil
 							}
-							self.activerecord_#{configuration[:as]}_data.each { |i|
-								h[i.dynamic_column.key] = i.value unless !i.dynamic_column
+
+							self.activerecord_dynamic_column_data.each { |i|
+								h[i.dynamic_column.key] = i.value unless !i.dynamic_column || !h.has_key?(i.dynamic_column.key)
 							}
+
 							h
 						end
 
@@ -191,17 +252,27 @@ module HasDynamicColumns
 						end
 
 						def field_scope_#{configuration[:as]}
-							self.field_scope.send("activerecord_"+self.field_scope.dynamic_columns_as).select { |i|
-								# Only get things with no dynamic type defined or dynamic types defined as this class
-								i.dynamic_type.to_s.empty? || i.dynamic_type.to_s == self.class.to_s
-							}
-						end
-
-						def dynamic_columns_as
-							"#{configuration[:as].to_s}"
+							# has_many relationship
+							if self.get_#{configuration[:as]}_field_scope.respond_to?(:select) && self.get_#{configuration[:as]}_field_scope.respond_to?(:collect)
+								self.get_#{configuration[:as]}_field_scope.collect { |i|
+									i.send("activerecord_dynamic_columns")
+								}.flatten.select { |i|
+									i.dynamic_type.to_s.empty? || i.dynamic_type.to_s == self.class.to_s
+								}
+							# belongs_to relationship
+							else
+								self.get_#{configuration[:as]}_field_scope.send("activerecord_dynamic_columns").select { |i|
+									# Only get things with no dynamic type defined or dynamic types defined as this class
+									i.dynamic_type.to_s.empty? || i.dynamic_type.to_s == self.class.to_s
+								}
+							end
 						end
 
 					protected
+						def get_#{configuration[:as]}_field_scope
+							#{configuration[:field_scope]}
+						end
+
 						# Whether this is storable
 						def storable_#{configuration[:as].to_s.singularize}_key?(key)
 							self.#{configuration[:as].to_s.singularize}_keys.include?(key.to_s)
@@ -210,14 +281,10 @@ module HasDynamicColumns
 						# Figures out which dynamic_column has which key
 						def #{configuration[:as].to_s.singularize}_key_to_dynamic_column(key)
 							found = nil
-							if record = self.send("field_scope_"+self.dynamic_columns_as).select { |i| i.key == key.to_s }.first
+							if record = self.send('field_scope_#{configuration[:as]}').select { |i| i.key == key.to_s }.first
 								found = record
 							end
 							found
-						end
-
-						def field_scope
-							#{configuration[:field_scope]}
 						end
 				EOV
 			end
@@ -225,47 +292,8 @@ module HasDynamicColumns
 
 		module InstanceMethods
 			# Validate all the dynamic_column_data at once
-			def validate_dynamic_column_data
-				field_scope = self.field_scope
+			def validate_dynamic_column_data(field_scope = nil)
 
-				if field_scope
-					# All the fields defined on the parent model
-					dynamic_columns = field_scope.send("activerecord_#{field_scope.dynamic_columns_as}")
-
-					self.send("activerecord_#{self.dynamic_columns_as}_data").each { |dynamic_column_datum|
-						# Collect all validation errors
-						validation_errors = []
-
-						if dynamic_column_datum.dynamic_column_option_id == -1
-							validation_errors << "invalid_option"
-						end
-
-						# Find the dynamic_column defined for this datum
-						dynamic_column = nil
-						dynamic_columns.each { |i|
-							if i == dynamic_column_datum.dynamic_column
-								dynamic_column = i
-								break
-							end
-						}
-						# We have a dynamic_column - validate
-						if dynamic_column
-							dynamic_column.dynamic_column_validations.each { |validation|
-								if !validation.is_valid?(dynamic_column_datum.value.to_s)
-									validation_errors << validation.error
-								end
-							}
-						else
-							# No field found - this is probably bad - should we throw an error?
-							validation_errors << "not_found"
-						end
-
-						# If any errors exist - add them
-						if validation_errors.length > 0
-							errors.add(:dynamic_columns, { "#{dynamic_column.key}" => validation_errors })
-						end
-					}
-				end
 			end
 		end
 	end

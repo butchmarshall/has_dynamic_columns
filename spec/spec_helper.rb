@@ -47,6 +47,22 @@ ActiveRecord::Schema.define do
 		t.integer :customer_id
 		t.timestamps
 	end
+	create_table :products, force: true do |t|
+		t.string :name
+		t.integer :account_id
+		t.timestamps
+	end
+	create_table :categories, force: true do |t|
+		t.string :name
+		t.integer :account_id
+		t.timestamps
+	end
+	create_table :category_owners, force: true do |t|
+		t.integer :category_id
+		t.integer :owner_id
+		t.string :owner_type
+		t.timestamps
+	end
 end
 
 class Account < ActiveRecord::Base
@@ -65,6 +81,29 @@ class CustomerAddress < ActiveRecord::Base
 	has_dynamic_columns field_scope: "customer.account", dynamic_type: "CustomerAddress", as: "fields"
 end
 
+class Product < ActiveRecord::Base
+	belongs_to :account
+	has_many :category_owners, :as => :owner
+	has_many :categories, :through => :category_owners
+
+	# Fields defined via the account
+	has_dynamic_columns field_scope: "account", dynamic_type: "Product", as: "product_fields"
+
+	# Fields defined via any associated categories
+	has_dynamic_columns field_scope: "categories", dynamic_type: "Product", as: "category_fields"
+end
+
+class Category < ActiveRecord::Base
+	belongs_to :account
+	has_many :category_owners
+
+	has_dynamic_columns field_scope: "account"
+end
+
+class CategoryOwner < ActiveRecord::Base
+	belongs_to :category
+	belongs_to :owner, :polymorphic => true
+end
 
 RSpec.configure do |config|
 	config.after(:each) do

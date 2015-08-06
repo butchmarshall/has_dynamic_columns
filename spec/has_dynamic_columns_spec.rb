@@ -32,7 +32,152 @@ describe HasDynamicColumns do
 		field.dynamic_column_validations.build(:regexp => "^[^$]+$", :error => "blank")
 		field.dynamic_column_validations.build(:regexp => "^[ABCEGHJKLMNPRSTVXY]\\d[ABCEGHJKLMNPRSTVWXYZ]( )?\\d[ABCEGHJKLMNPRSTVWXYZ]\\d$", :error => "invalid_format")
 
+		# Product fields
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "rarity", :data_type => "string")
+
 		account
+	end
+
+	describe Product do
+		subject(:product) {
+			Product.new(:name => "Product #1", :account => account)
+		}
+		before do
+			@category0 = Category.new(:name => "Category 0", :account => product.account)
+			@category0.save
+
+			@category1 = Category.new(:name => "Category 1", :account => product.account)
+			@category1.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "vin_number", :data_type => "string")
+			@category1.save
+
+			@category2 = Category.new(:name => "Category 2", :account => product.account)
+			@category2.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "serial_number", :data_type => "string")
+			@category2.save
+			
+			@category3 = Category.new(:name => "Category 3", :account => product.account)
+			@category3.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "funky_data", :data_type => "string")
+			@category3.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "funkier_data", :data_type => "string")
+			@category3.save
+			
+			@category4 = Category.new(:name => "Category 4", :account => product.account)
+			@category4.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "funkiest_data", :data_type => "string")
+			@category4.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "ok_data", :data_type => "string")
+		end
+
+		context 'when it has a defined has_many relationship' do
+
+			context 'when it has_many categories' do
+
+				it 'should return empty category_fields when no categories associated' do
+					json = product.as_json
+					expect(json["category_fields"]).to eq({})
+				end
+
+				it 'should return empty category_fields when no category has no dynamic_columns' do
+					product.categories << @category0
+					json = product.as_json
+					expect(json["category_fields"]).to eq({})
+				end
+
+				context 'when not saved' do
+					it 'should return a categories fields' do
+						product.categories << @category1
+						product.category_fields = {
+							"vin_number" => "123"
+						}
+
+						json = product.as_json
+						expect(json["category_fields"]).to eq({"vin_number"=>"123"})
+						expect(product.new_record?).to eq(true)
+					end
+				end
+				context 'when saved' do
+					it 'should return a categories fields' do
+						product.categories << @category1
+						product.category_fields = {
+							"vin_number" => "345"
+						}
+						product.save
+
+						json = product.as_json
+						expect(json["category_fields"]).to eq({"vin_number"=>"345"})
+						expect(product.new_record?).to eq(false)
+						
+						product_id = product.id
+						product = Product.find(product_id)
+						json = product.as_json
+						expect(json["category_fields"]).to eq({"vin_number"=>"345"})
+					end
+				end
+
+				it 'should kitchen sink' do
+					product.product_fields = {
+						"rarity" => "very rare"
+					}
+
+					# Add category 1 to the product - it should now have the fields of "vin number"
+					product.categories << @category1
+					product.categories << @category2
+
+					product.category_fields = {
+						"vin_number" => "first:this is the vin number",
+						"serial_number" => "first:serial number!"
+					}
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"first:serial number!"})
+
+					product.save
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"first:serial number!"})
+
+					product_id = product.id
+					product = Product.find(product_id)
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"first:serial number!"})
+
+					product.category_fields = {
+						"serial_number" => "second:serial number!"
+					}
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!"})
+
+					product.save
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!"})
+
+					product = Product.find(product_id)
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!"})
+
+					expect(@category4.new_record?).to eq(true)
+
+					product.categories << @category3
+					product.categories << @category4
+
+					expect(@category4.new_record?).to eq(false)
+
+					product.category_fields = {
+						"funkier_data" => "this is funkier data",
+						"ok_data" => "this is ok data"
+					}
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!", "funky_data"=>nil, "funkier_data"=>"this is funkier data", "funkiest_data"=>nil, "ok_data"=>"this is ok data"})
+
+					product.save
+					product = Product.find(product_id)
+					json = product.as_json
+					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
+					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!", "funky_data"=>nil, "funkier_data"=>"this is funkier data", "funkiest_data"=>nil, "ok_data"=>"this is ok data"})
+				end
+			end
+		end
 	end
 
 	describe Customer do
@@ -56,7 +201,7 @@ describe HasDynamicColumns do
 			end
 			it 'should find me' do
 				c = customer
-				c.save
+				expect(c.save).to eq(true)
 				a = c.account
 
 				expect(a.customers.dynamic_where(a, { first_name: "Butch" }).length).to eq(1)
@@ -183,10 +328,10 @@ describe HasDynamicColumns do
 				it 'should should retrieve properly from the database' do
 					sub = customer_address
 					sub.save
-	
+
 					customer = CustomerAddress.find(sub.id)
 					json = customer.as_json(:root => "customer_address")
-					
+
 					expect(json["customer_address"]["fields"]).to eq({
 						"address_1" => "555 Bloor Street",
 						"address_2" => nil,
