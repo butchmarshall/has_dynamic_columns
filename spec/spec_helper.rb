@@ -73,12 +73,12 @@ end
 class Customer < ActiveRecord::Base
 	belongs_to :account
 	has_many :customer_addresses
-	has_dynamic_columns field_scope: "account", dynamic_type: "Customer", as: "fields"
+	has_dynamic_columns field_scope: "account", as: "fields"
 end
 
 class CustomerAddress < ActiveRecord::Base
 	belongs_to :customer
-	has_dynamic_columns field_scope: "customer.account", dynamic_type: "CustomerAddress", as: "fields"
+	has_dynamic_columns field_scope: "customer.account", as: "fields"
 end
 
 class Product < ActiveRecord::Base
@@ -87,10 +87,10 @@ class Product < ActiveRecord::Base
 	has_many :categories, :through => :category_owners
 
 	# Fields defined via the account
-	has_dynamic_columns field_scope: "account", dynamic_type: "Product", as: "product_fields"
+	has_dynamic_columns field_scope: "account", as: "product_fields"
 
 	# Fields defined via any associated categories
-	has_dynamic_columns field_scope: "categories", dynamic_type: "Product", as: "category_fields"
+	has_dynamic_columns field_scope: "categories", as: "category_fields"
 end
 
 class Category < ActiveRecord::Base
