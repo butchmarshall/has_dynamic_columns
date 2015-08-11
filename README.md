@@ -139,29 +139,29 @@ puts customer.as_json
 account = Account.find(1)
 
 # 1 result
-Customer.where.has_dynamic_scope({ :first_name => "Butch" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :first_name => "Butch" }).with_scope(account)
 
 # 1 result
-Customer.where.has_dynamic_scope({ :first_name => "Butch", :company => "Aperture Science" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :first_name => "Butch", :company => "Aperture Science" }).with_scope(account)
 
 # 0 results
-Customer.where.has_dynamic_scope({ :first_name => "Butch", :company => "Blaaaaa" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :first_name => "Butch", :company => "Blaaaaa" }).with_scope(account)
 
 # 2 results
-Customer.where.has_dynamic_scope({ :company => "Aperture Science" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :company => "Aperture Science" }).with_scope(account)
 
 # ------------------------------------------------
 # Find customers under the second account
 # ------------------------------------------------
 account = Account.find(2)
 # 1 result
-Customer.where.has_dynamic_scope({ :first_name => "Butch" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :first_name => "Butch" }).with_scope(account)
 
 # 1 result
-Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Canada" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :first_name => "Butch", :country => "Canada" }).with_scope(account)
 
 # 0 results
-Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Japan" }).with_scope(account)
+Customer.where.has_dynamic_columns({ :first_name => "Butch", :country => "Japan" }).with_scope(account)
 
 # ------------------------------------------------
 # without_scope
@@ -169,7 +169,7 @@ Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Japan" }
 
 # 6 results
 # finds everyone named butch, no matter what account they're apart of
-Customer.where.has_dynamic_scope({ :first_name => "Butch" }).without_scope
+Customer.where.has_dynamic_columns({ :first_name => "Butch" }).without_scope
 
 # ------------------------------------------------
 # with Arel
@@ -177,10 +177,10 @@ Customer.where.has_dynamic_scope({ :first_name => "Butch" }).without_scope
 # ------------------------------------------------
 
 # 6 matches
-Customer.where.has_dynamic_scope(Customer.arel_table[:first_Name].matches("B%")).without_scope
+Customer.where.has_dynamic_columns(Customer.arel_table[:first_Name].matches("B%")).without_scope
 
 # 1 match
-Customer.where.has_dynamic_scope(Customer.arel_table[:first_Name].eq("Canada")).with_scope(Account.find(1))
+Customer.where.has_dynamic_columns(Customer.arel_table[:first_Name].eq("Canada")).with_scope(Account.find(1))
 ```
 
 ## **has_many** relationship
