@@ -1,5 +1,5 @@
 module HasDynamicColumns
-	class DynamicColumnValidation < ActiveRecord::Base
+	class DynamicColumnValidation < ::ActiveRecord::Base
 		belongs_to :dynamic_column, :class_name => "HasDynamicColumns::DynamicColumn"
 
 		def is_valid?(str)

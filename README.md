@@ -128,37 +128,60 @@ puts customer.as_json
 
 **Searching**
 ```ruby
+
+# ------------------------------------------------
+# with_scope
+# ------------------------------------------------
+
 # ------------------------------------------------
 # Find customers under the first account
 # ------------------------------------------------
 account = Account.find(1)
 
 # 1 result
-Customer.dynamic_where(account, { :first_name => "Butch" })
+Customer.where.has_dynamic_scope({ :first_name => "Butch" }).with_scope(account)
 
 # 1 result
-Customer.dynamic_where(account, { :first_name => "Butch", :company => "Aperture Science" })
+Customer.where.has_dynamic_scope({ :first_name => "Butch", :company => "Aperture Science" }).with_scope(account)
 
 # 0 results
-Customer.dynamic_where(account, { :first_name => "Butch", :company => "Blaaaaa" })
+Customer.where.has_dynamic_scope({ :first_name => "Butch", :company => "Blaaaaa" }).with_scope(account)
 
 # 2 results
-Customer.dynamic_where(account, { :company => "Aperture Science" })
-
+Customer.where.has_dynamic_scope({ :company => "Aperture Science" }).with_scope(account)
 
 # ------------------------------------------------
 # Find customers under the second account
 # ------------------------------------------------
 account = Account.find(2)
 # 1 result
-Customer.dynamic_where(account, { :first_name => "Butch" })
+Customer.where.has_dynamic_scope({ :first_name => "Butch" }).with_scope(account)
 
 # 1 result
-Customer.dynamic_where(account, { :first_name => "Butch", :country => "Canada" })
+Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Canada" }).with_scope(account)
 
 # 0 results
-Customer.dynamic_where(account, { :first_name => "Butch", :country => "Japan" })
+Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Japan" }).with_scope(account)
 ```
+
+# ------------------------------------------------
+# without_scope
+# ------------------------------------------------
+
+# 6 results
+# finds everyone named butch, no matter what account they're apart of
+Customer.where.has_dynamic_scope({ :first_name => "Butch" }).without_scope
+
+# ------------------------------------------------
+# with Arel
+# WARNING: compound conditionals such as Customer.arel_table[:first_Name].matches("B%").and(Customer.arel_table[:first_Name].eq("Canada")) are NOT currently supported
+# ------------------------------------------------
+
+# 6 matches
+Customer.where.has_dynamic_scope(Customer.arel_table[:first_Name].matches("B%")).without_scope
+
+# 1 match
+Customer.where.has_dynamic_scope(Customer.arel_table[:first_Name].eq("Canada")).with_scope(Account.find(1))
 
 ## **has_many** relationship
 
