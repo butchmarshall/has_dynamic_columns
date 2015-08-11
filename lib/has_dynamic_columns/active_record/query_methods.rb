@@ -9,10 +9,6 @@ module HasDynamicColumns
 				end
 
 				base.instance_eval do
-					def has_dynamic_column_values=a
-					end
-					def has_dynamic_column_values
-					end
 				end
 			end
 
