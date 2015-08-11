@@ -1,4 +1,9 @@
 require "active_support"
+require 'active_support/dependencies'
+require "active_record"
+
+require "has_dynamic_columns/active_record/query_methods"
+require "has_dynamic_columns/active_record/relation"
 
 require "has_dynamic_columns/model"
 require "has_dynamic_columns/version"
@@ -15,9 +20,13 @@ if defined?(Rails::Railtie)
 		initializer 'has_dynamic_columns.insert_into_active_record' do
 			ActiveSupport.on_load :active_record do
 				ActiveRecord::Base.send(:include, HasDynamicColumns::Model)
+				ActiveRecord::Relation.send(:include, HasDynamicColumns::ActiveRecord::Relation)
+				ActiveRecord::QueryMethods.send(:include, HasDynamicColumns::ActiveRecord::QueryMethods)
 			end
 		end
 	end
-else
-	ActiveRecord::Base.send(:include, HasDynamicColumns::Model) if defined?(ActiveRecord)
+elsif defined?(ActiveRecord)
+	ActiveRecord::Base.send(:include, HasDynamicColumns::Model)
+	ActiveRecord::Relation.send(:include, HasDynamicColumns::ActiveRecord::Relation)
+	ActiveRecord::QueryMethods.send(:include, HasDynamicColumns::ActiveRecord::QueryMethods)
 end

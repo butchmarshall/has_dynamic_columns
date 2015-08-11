@@ -1,13 +1,10 @@
 require 'logger'
 require 'rspec'
 
-require 'active_support/dependencies'
-require 'active_record'
-
 require 'has_dynamic_columns'
 
 if ENV['DEBUG_LOGS']
-	
+
 else
 
 end

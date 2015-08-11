@@ -1,5 +1,5 @@
 module HasDynamicColumns
-	class DynamicColumnDatum < ActiveRecord::Base
+	class DynamicColumnDatum < ::ActiveRecord::Base
 		belongs_to :dynamic_column, :class_name => "HasDynamicColumns::DynamicColumn"
 		belongs_to :dynamic_column_option, :class_name => "HasDynamicColumns::DynamicColumnOption"
 		belongs_to :owner, :polymorphic => true
