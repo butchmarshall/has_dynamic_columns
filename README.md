@@ -162,7 +162,6 @@ Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Canada" 
 
 # 0 results
 Customer.where.has_dynamic_scope({ :first_name => "Butch", :country => "Japan" }).with_scope(account)
-```
 
 # ------------------------------------------------
 # without_scope
@@ -182,6 +181,7 @@ Customer.where.has_dynamic_scope(Customer.arel_table[:first_Name].matches("B%"))
 
 # 1 match
 Customer.where.has_dynamic_scope(Customer.arel_table[:first_Name].eq("Canada")).with_scope(Account.find(1))
+```
 
 ## **has_many** relationship
 
