@@ -140,6 +140,7 @@ module HasDynamicColumns
 							query
 						end
 
+						# Depricated
 						# Find by dynamic columns
 						def self.dynamic_where(*args)
 							field_scope = args[0].is_a?(Hash) ? nil : args[0]

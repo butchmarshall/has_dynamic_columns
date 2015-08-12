@@ -2,41 +2,58 @@ module HasDynamicColumns
 	module ActiveRecord
 		module QueryMethods
 			def self.included(base)
-
 				base.class_eval do
 					alias_method_chain :where, :dynamic_columns
 					alias_method_chain :build_arel, :dynamic_columns
-				end
 
-				base.instance_eval do
-				end
-			end
-
-			# When arel starts building - filter
-			def build_arel_with_dynamic_columns
-				#arel = Arel::SelectManager.new(table.engine, table)
-
-				# Calculate any dynamic scope that was passed
-				self.has_dynamic_columns_values.each { |dynamic_scope|
-					field_scope = dynamic_scope[:scope]	
-					field_scope_id = (!field_scope.nil?) ? field_scope.id : nil
-					field_scope_type = (!field_scope.nil?) ? field_scope.class.name.constantize.to_s : nil
-
-					# TODO - make this work on compound arel queries like: table[:last_name].eq("Paterson").or(table[:first_name].eq("John"))
-					#collapsed = collapse_wheres(arel, dynamic_scope[:where])
-
-					dynamic_scope[:where].each_with_index { |rel, index|
+					# Recurses through arel nodes until it finds one it can work with
+					def dynamic_column_process_nodes(rel, scope, index)
 						case rel
-						when String
-							next
-						else
-							dynamic_type = rel.left.relation.engine.to_s
-							col_name = rel.left.name
-							value = rel.right
+						when Arel::Nodes::Grouping
+							dynamic_column_process_nodes(rel.expr, scope, index+1)
+						when Arel::Nodes::Or
+							dynamic_column_process_nodes(rel.left, scope, index+1)
+							dynamic_column_process_nodes(rel.right, scope, index+10000) # Hack - queries with over 10,000 dynamic where conditions may break
+						when Arel::Nodes::And
+							dynamic_column_process_nodes(rel.left, scope, index+1)
+							dynamic_column_process_nodes(rel.right, scope, index+10000) # Hack - queries with over 10,000 dynamic where conditions may break
+						# We can work with this
+						else	
+							dynamic_column_build_arel_joins_and_modify_wheres(rel, scope, index+1)
 						end
+					end
+
+					# Builds the joins required for this dynamic column
+					# Modifies the where to use the dynamic_column_data table alias
+					#
+					# rel - an arel node
+					# scope - scope to run the conditions in
+					# index - unique table identifier
+					def dynamic_column_build_arel_joins_and_modify_wheres(rel, scope, index)
+						col_name = rel.left.name
+						value = rel.right
+
+						field_scope = scope
+						field_scope_id = (!field_scope.nil?) ? field_scope.id : nil
+						field_scope_type = (!field_scope.nil?) ? field_scope.class.name.constantize.to_s : nil
 
 						column_table = HasDynamicColumns::DynamicColumn.arel_table.alias("dynamic_where_#{index}_#{col_name}")
 						column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_where_data_#{index}_#{col_name}")
+
+						dynamic_type = rel.left.relation.engine.to_s
+						rel.left.relation = column_datum_table # modify the where to use the aliased table
+						rel.left.name = :value # value is the data storage column searchable on dynamic_column_data table
+
+						rel.right = case rel.right
+						# Map true -> 1
+						when ::TrueClass
+							1
+						# Map false -> 0
+						when ::FalseClass
+							0
+						else
+							rel.right
+						end
 
 						# Join on the column with the key
 						on_query = column_table[:key].eq(col_name)
@@ -56,13 +73,6 @@ module HasDynamicColumns
 						column_table_join = table.create_join(column_table, column_table_join_on)
 						self.joins_values += [column_table_join]
 
-						arel_node = case rel
-							when Arel::Nodes::Equality
-								column_datum_table[:value].eq(value)
-							else
-								column_datum_table[:value].matches(value)
-						end
-
 						# Join on all the data with the provided key
 						column_table_datum_join_on = column_datum_table
 												.create_on(
@@ -70,15 +80,37 @@ module HasDynamicColumns
 														column_datum_table[:owner_type].eq(dynamic_type)
 													).and(
 														column_datum_table[:dynamic_column_id].eq(column_table[:id])
-													).and(
-														arel_node
 													)
 												)
 
-						column_table_datum_join = table.create_join(column_datum_table, column_table_datum_join_on)
+						column_table_datum_join = table.create_join(column_datum_table, column_table_datum_join_on, Arel::Nodes::OuterJoin)
 						self.joins_values += [column_table_datum_join]
+
+					end
+				end
+			end
+
+			# When arel starts building - filter
+			def build_arel_with_dynamic_columns
+				# Calculate any dynamic scope that was passed
+				self.has_dynamic_columns_values.each_with_index { |dynamic_scope, index_outer|
+					dynamic_scope[:where].each_with_index { |rel, index_inner|
+						# Process each where
+						dynamic_column_process_nodes(rel, dynamic_scope[:scope], (index_outer*1000)+(index_inner*10000))
+
+						# It's now safe to use the original where query
+						# All the conditions in rel have been modified to be a where of the aliases dynamic_where_data table
+						
+						# Warning
+						# Must cast rel to a string - I've encountered ***strange*** situations where this will change the 'col_name' to value in the where clause
+						# specifically, the test 'case should restrict if scope specified' will fail
+						self.where_values += [rel.to_sql]
 					}
 				}
+				# At least one dynamic where run - we need to group or we're going to get duplicates
+				if self.has_dynamic_columns_values.length > 0
+					self.group_values += [Arel::Nodes::Group.new(table[:id])]
+				end
 
 				build_arel_without_dynamic_columns
 			end

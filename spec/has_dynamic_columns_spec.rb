@@ -38,8 +38,22 @@ describe HasDynamicColumns do
 		account
 	end
 
+	let (:account2) do
+		account = Account.new(:name => "Account #2")
 
-	describe HasDynamicColumns::ActiveRecord, :focus => true do
+		# Setup dynamic fields for Customer under this account
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "first_name", :data_type => "string")
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "last_name", :data_type => "string")
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "country", :data_type => "string")
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "company", :data_type => "string")
+
+		# Product fields
+		account.activerecord_dynamic_columns.build(:dynamic_type => "Product", :key => "rarity", :data_type => "string")
+
+		account
+	end
+
+	describe HasDynamicColumns::ActiveRecord, :focus => true  do
 		it 'should find everyone in the current account scope' do
 			customer = Customer.create(:account => account)
 			customer.fields = {
@@ -71,7 +85,7 @@ describe HasDynamicColumns do
 			customer = Customer.create(:account => account)
 			customer.fields = {
 				"first_name" => "Carl",
-				"last_name" => "Marx",
+				"last_name" => "Paterson",
 				"email" => "carl@communist.com",
 				"trusted" => false,
 			}
@@ -81,17 +95,17 @@ describe HasDynamicColumns do
 
 			# 1 communist
 			result = Customer.where.has_dynamic_columns(table[:email].matches("%gmail.com")).with_scope(account)
-			expect(result.length).to eq(3)
+			expect(result.all.length).to eq(3)
 
 			# 2 patersons
 			result = Customer.where.has_dynamic_columns(table[:last_name].eq("Paterson")).with_scope(account)
-			expect(result.length).to eq(2)
-			
+			expect(result.all.length).to eq(3)
+
 			# 1 john paterson
 			result = Customer
 						.where.has_dynamic_columns(table[:first_name].eq("John")).with_scope(account)
 						.where.has_dynamic_columns(table[:last_name].eq("Paterson")).with_scope(account)
-			expect(result.length).to eq(1)
+			expect(result.all.length).to eq(1)
 		end
 
 		it 'should find the single person in this scope' do
@@ -105,12 +119,88 @@ describe HasDynamicColumns do
 			customer.save
 
 			result = Customer.where.has_dynamic_columns(Customer.arel_table[:email].matches("%gmail.com")).with_scope(account)
-			expect(result.length).to eq(1)
+			expect(result.all.length).to eq(1)
 		end
 
 		it 'should find all 4 gmail users when no scope passed' do
 			result = Customer.where.has_dynamic_columns(Customer.arel_table[:email].matches("%gmail.com")).without_scope
-			expect(result.length).to eq(4)
+			expect(result.all.length).to eq(4)
+		end
+
+		it 'should find anyone with first names Steve or John in account 1\'s scope' do
+			customer = Customer.create(:account => account)
+			customer.fields = {
+				"first_name" => "Steve",
+				"last_name" => "Jobs",
+				"email" => "steve.jobs@apple.com",
+				"trusted" => false,
+			}
+			customer.save
+			
+			result = Customer.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve").or(Customer.arel_table[:first_name].eq("John"))).with_scope(Account.find(1))
+			expect(result.all.length).to eq(2)
+		end
+
+		it 'should find anyone with first names Steve or John in any scope' do
+			result = Customer.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve").or(Customer.arel_table[:first_name].eq("John"))).without_scope
+			expect(result.all.length).to eq(3)
+		end
+
+		it 'should find anyone with first names Steve or John and is trusted in any scope' do
+			result = Customer
+						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).without_scope
+						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve").or(Customer.arel_table[:first_name].eq("John"))).without_scope
+			expect(result.all.length).to eq(2)
+		end
+
+		it 'should find anyone with first names Steve and is not trusted in any scope' do
+			result = Customer
+						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(false)).without_scope
+						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
+			expect(result.all.length).to eq(1)
+		end
+		
+		it 'should find all the Steves who are trusted in account 3\'s scope' do
+			result = Customer
+						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).with_scope(Account.find(3))
+						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
+			expect(result.all.length).to eq(0)
+		end
+
+		it 'should find all the Steves who are trusted in account 1\'s scope' do
+			result = Customer
+						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).with_scope(Account.find(1))
+						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
+			expect(result.all.length).to eq(1)
+		end
+
+		it 'should find across column types if no scope specified' do
+			customer = Customer.create(:account => account2)
+			customer.fields = {
+				"first_name" => "Steve",
+				"last_name" => "Jobs",
+				"company" => "Apple Computers",
+				"country" => "USA",
+			}
+			customer.save
+
+			result = Customer
+						.where.has_dynamic_columns(
+							Customer.arel_table[:first_name].eq("John").or(
+								Customer.arel_table[:company].eq("Apple Computers")
+							)
+						).without_scope
+			expect(result.all.length).to eq(2)
+		end
+
+		it 'should restrict if scope specified' do
+			result = Customer
+						.where.has_dynamic_columns(
+							Customer.arel_table[:first_name].eq("John").or(
+								Customer.arel_table[:company].eq("Apple Computers")
+							)
+						).with_scope(Account.find(4))
+			expect(result.all.length).to eq(1)
 		end
 	end
 
