@@ -8,7 +8,7 @@ class AddHasDynamicColumns < ActiveRecord::Migration
 			t.string :key
 			t.string :data_type
 
-			t.timestamps
+			t.timestamps null: false
 		end
 		add_index(:dynamic_columns, [:field_scope_id, :field_scope_type, :dynamic_type], name: 'index1')
 		create_table :dynamic_column_validations do |t|
@@ -17,13 +17,13 @@ class AddHasDynamicColumns < ActiveRecord::Migration
 			t.string :error
 			t.string :regexp
 
-			t.timestamps
+			t.timestamps null: false
 		end
 		create_table :dynamic_column_options do |t|
 			t.integer :dynamic_column_id
 			t.string :key
 
-			t.timestamps
+			t.timestamps null: false
 		end
 		create_table :dynamic_column_data do |t|
 			t.string :owner_type
@@ -32,7 +32,7 @@ class AddHasDynamicColumns < ActiveRecord::Migration
 			t.integer :dynamic_column_option_id
 			t.string :value
 
-			t.timestamps
+			t.timestamps null: false
 		end
 		add_index(:dynamic_column_data, [:owner_id, :owner_type, :dynamic_column_id], name: 'index2')
 	end

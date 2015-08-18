@@ -14,17 +14,17 @@ describe HasDynamicColumns do
 		account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "address_1", :data_type => "string")
 		account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "address_2", :data_type => "string")
 
-		field = account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "country", :data_type => "list")
+		field = account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "country", :data_type => "enum")
 		field.dynamic_column_options.build(:key => "canada")
 		field.dynamic_column_options.build(:key => "usa")
 		field.dynamic_column_options.build(:key => "mexico")
 
-		field = account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "city", :data_type => "list")
+		field = account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "city", :data_type => "enum")
 		field.dynamic_column_options.build(:key => "toronto")
 		field.dynamic_column_options.build(:key => "alberta")
 		field.dynamic_column_options.build(:key => "vancouver")
 
-		field = account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "province", :data_type => "list")
+		field = account.activerecord_dynamic_columns.build(:dynamic_type => "CustomerAddress", :key => "province", :data_type => "enum")
 		field.dynamic_column_options.build(:key => "ontario")
 		field.dynamic_column_options.build(:key => "quebec")
 
@@ -53,9 +53,12 @@ describe HasDynamicColumns do
 		account
 	end
 
-	describe HasDynamicColumns::ActiveRecord, :focus => true  do
+	describe HasDynamicColumns::ActiveRecord do
 		it 'should find everyone in the current account scope' do
-			customer = Customer.create(:account => account)
+			customer = Customer.create(
+				:account => account,
+				:name => "Butch Marshall"
+			)
 			customer.fields = {
 				"first_name" => "Butch",
 				"last_name" => "Marshall",
@@ -64,7 +67,10 @@ describe HasDynamicColumns do
 			}
 			customer.save
 
-			customer = Customer.create(:account => account)
+			customer = Customer.create(
+				:account => account,
+				:name => "John Paterson"
+			)
 			customer.fields = {
 				"first_name" => "John",
 				"last_name" => "Paterson",
@@ -73,7 +79,10 @@ describe HasDynamicColumns do
 			}
 			customer.save
 
-			customer = Customer.create(:account => account)
+			customer = Customer.create(
+				:account => account,
+				:name => "Steve Paterson"
+			)
 			customer.fields = {
 				"first_name" => "Steve",
 				"last_name" => "Paterson",
@@ -82,7 +91,10 @@ describe HasDynamicColumns do
 			}
 			customer.save
 
-			customer = Customer.create(:account => account)
+			customer = Customer.create(
+				:account => account,
+				:name => "Carl Paterson"
+			)
 			customer.fields = {
 				"first_name" => "Carl",
 				"last_name" => "Paterson",
@@ -106,10 +118,58 @@ describe HasDynamicColumns do
 						.where.has_dynamic_columns(table[:first_name].eq("John")).with_scope(account)
 						.where.has_dynamic_columns(table[:last_name].eq("Paterson")).with_scope(account)
 			expect(result.all.length).to eq(1)
+
+			# Find
+			result = Customer
+						.where
+							.has_dynamic_columns(
+								Customer.arel_table[:trusted].eq(true)
+							).with_scope(account)
+						.where
+							.has_dynamic_columns(
+								Customer.arel_table[:first_name].eq("Steve").or(
+									Customer.arel_table[:first_name].eq("John")
+								)
+							).without_scope
+			expect(result.all.length).to eq(2)
+
+			# Find
+			result = Customer
+						.where
+							.has_dynamic_columns(
+								Customer.arel_table[:trusted].eq(false)
+							).with_scope(account)
+						.where
+							.has_dynamic_columns(
+								Customer.arel_table[:first_name].eq("Steve").or(
+									Customer.arel_table[:first_name].eq("John")
+								)
+							).without_scope
+			expect(result.all.length).to eq(0)
+
+			result = Customer
+						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).with_scope(account)
+						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
+			expect(result.all.length).to eq(1)
+			
+			# Find
+			result = Customer
+						.where
+							.has_dynamic_columns(
+								Customer.arel_table[:first_name].eq("Steve").or(
+									Customer.arel_table[:first_name].eq("John")
+								)
+							)
+				.with_scope(account)
+
+			expect(result.all.length).to eq(2)
 		end
 
 		it 'should find the single person in this scope' do
-			customer = Customer.create(:account => account)
+			customer = Customer.create(
+				:account => account,
+				:name => "Merridyth Marshall"
+			)
 			customer.fields = {
 				"first_name" => "Merridyth",
 				"last_name" => "Marshall",
@@ -128,7 +188,10 @@ describe HasDynamicColumns do
 		end
 
 		it 'should find anyone with first names Steve or John in account 1\'s scope' do
-			customer = Customer.create(:account => account)
+			customer = Customer.create(
+				:account => account,
+				:name => "Steve Jobs"
+			)
 			customer.fields = {
 				"first_name" => "Steve",
 				"last_name" => "Jobs",
@@ -136,9 +199,6 @@ describe HasDynamicColumns do
 				"trusted" => false,
 			}
 			customer.save
-			
-			result = Customer.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve").or(Customer.arel_table[:first_name].eq("John"))).with_scope(Account.find(1))
-			expect(result.all.length).to eq(2)
 		end
 
 		it 'should find anyone with first names Steve or John in any scope' do
@@ -146,32 +206,11 @@ describe HasDynamicColumns do
 			expect(result.all.length).to eq(3)
 		end
 
-		it 'should find anyone with first names Steve or John and is trusted in any scope' do
-			result = Customer
-						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).without_scope
-						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve").or(Customer.arel_table[:first_name].eq("John"))).without_scope
-			expect(result.all.length).to eq(2)
-		end
-
-		it 'should find anyone with first names Steve and is not trusted in any scope' do
-			result = Customer
-						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(false)).without_scope
-						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
-			expect(result.all.length).to eq(1)
-		end
-		
 		it 'should find all the Steves who are trusted in account 3\'s scope' do
 			result = Customer
 						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).with_scope(Account.find(3))
 						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
 			expect(result.all.length).to eq(0)
-		end
-
-		it 'should find all the Steves who are trusted in account 1\'s scope' do
-			result = Customer
-						.where.has_dynamic_columns(Customer.arel_table[:trusted].eq(true)).with_scope(Account.find(1))
-						.where.has_dynamic_columns(Customer.arel_table[:first_name].eq("Steve")).without_scope
-			expect(result.all.length).to eq(1)
 		end
 
 		it 'should find across column types if no scope specified' do
@@ -191,16 +230,6 @@ describe HasDynamicColumns do
 							)
 						).without_scope
 			expect(result.all.length).to eq(2)
-		end
-
-		it 'should restrict if scope specified' do
-			result = Customer
-						.where.has_dynamic_columns(
-							Customer.arel_table[:first_name].eq("John").or(
-								Customer.arel_table[:company].eq("Apple Computers")
-							)
-						).with_scope(Account.find(4))
-			expect(result.all.length).to eq(1)
 		end
 	end
 
@@ -233,6 +262,7 @@ describe HasDynamicColumns do
 		context 'when it has a defined has_many relationship' do
 
 			context 'when it has_many categories' do
+
 				it 'should work with dynamic_where' do
 					product1 = Product.new(:name => "Product #1", :account => account)
 					product2 = Product.new(:name => "Product #2", :account => account)
@@ -285,13 +315,13 @@ describe HasDynamicColumns do
 				end
 
 				it 'should return empty category_fields when no categories associated' do
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["category_fields"]).to eq({})
 				end
 
 				it 'should return empty category_fields when no category has no dynamic_columns' do
 					product.categories << @category0
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["category_fields"]).to eq({})
 				end
 
@@ -302,7 +332,7 @@ describe HasDynamicColumns do
 							"vin_number" => "123"
 						}
 
-						json = product.as_json
+						json = product.as_json(:root => nil)
 						expect(json["category_fields"]).to eq({"vin_number"=>"123"})
 						expect(product.new_record?).to eq(true)
 					end
@@ -315,13 +345,13 @@ describe HasDynamicColumns do
 						}
 						product.save
 
-						json = product.as_json
+						json = product.as_json(:root => nil)
 						expect(json["category_fields"]).to eq({"vin_number"=>"345"})
 						expect(product.new_record?).to eq(false)
 						
 						product_id = product.id
 						product = Product.find(product_id)
-						json = product.as_json
+						json = product.as_json(:root => nil)
 						expect(json["category_fields"]).to eq({"vin_number"=>"345"})
 					end
 				end
@@ -339,35 +369,35 @@ describe HasDynamicColumns do
 						"vin_number" => "first:this is the vin number",
 						"serial_number" => "first:serial number!"
 					}
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"first:serial number!"})
 
 					product.save
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"first:serial number!"})
 
 					product_id = product.id
 					product = Product.find(product_id)
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"first:serial number!"})
 
 					product.category_fields = {
 						"serial_number" => "second:serial number!"
 					}
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!"})
 
 					product.save
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!"})
 
 					product = Product.find(product_id)
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!"})
 
@@ -382,13 +412,13 @@ describe HasDynamicColumns do
 						"funkier_data" => "this is funkier data",
 						"ok_data" => "this is ok data"
 					}
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!", "funky_data"=>nil, "funkier_data"=>"this is funkier data", "funkiest_data"=>nil, "ok_data"=>"this is ok data"})
 
 					product.save
 					product = Product.find(product_id)
-					json = product.as_json
+					json = product.as_json(:root => nil)
 					expect(json["product_fields"]).to eq({"rarity"=>"very rare"})
 					expect(json["category_fields"]).to eq({"vin_number"=>"first:this is the vin number", "serial_number"=>"second:serial number!", "funky_data"=>nil, "funkier_data"=>"this is funkier data", "funkiest_data"=>nil, "ok_data"=>"this is ok data"})
 				end
@@ -454,20 +484,20 @@ describe HasDynamicColumns do
 				c = customer
 
 				c.fields = { "trusted" => true }
-				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
+				expect(c.as_json(:root => nil)["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
 				c.save
-				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
+				expect(c.as_json(:root => nil)["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
 
 				c = Customer.find(c.id)
-				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
+				expect(c.as_json(:root => nil)["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>true})
 
 				c.fields = { "trusted" => false }
-				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
+				expect(c.as_json(:root => nil)["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
 				c.save
-				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
+				expect(c.as_json(:root => nil)["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
 
 				c = Customer.find(c.id)
-				expect(c.as_json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
+				expect(c.as_json(:root => nil)["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>"butch.a.marshall@gmail.com", "trusted"=>false})
 			end
 		end
 

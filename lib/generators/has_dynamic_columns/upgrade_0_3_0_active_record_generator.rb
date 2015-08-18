@@ -5,14 +5,14 @@ require "rails/generators/active_record"
 
 # Extend the HasDynamicColumnsGenerator so that it creates an AR migration
 module HasDynamicColumns
-	class ActiveRecordGenerator < ::HasDynamicColumnsGenerator
+	class Upgrade_0_3_0_ActiveRecordGenerator < ::HasDynamicColumnsGenerator
 		include Rails::Generators::Migration
 		extend NextMigrationVersion
 
 		source_paths << File.join(File.dirname(__FILE__), "templates")
 
 		def create_migration_file
-			migration_template "migration.rb", "db/migrate/add_has_dynamic_columns.rb"
+			migration_template "migration_0.3.0.rb", "db/migrate/upgrade_0_3_0_has_dynamic_columns.rb"
 		end
 
 		def self.next_migration_number(dirname)

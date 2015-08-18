@@ -1,5 +1,6 @@
 require 'logger'
 require 'rspec'
+require 'factory_girl'
 
 require 'has_dynamic_columns'
 
@@ -27,38 +28,40 @@ ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':me
 ActiveRecord::Migration.verbose = false
 
 require "generators/has_dynamic_columns/templates/migration"
+require "generators/has_dynamic_columns/templates/migration_0.3.0"
 ActiveRecord::Schema.define do
 	AddHasDynamicColumns.up
+	AddHasDynamicColumnsDatastore.up
 
 	create_table :accounts, force: true do |t|
 		t.string :name
-		t.timestamps
+		t.timestamps null: false
 	end
 	create_table :customers, force: true do |t|
 		t.string :name
 		t.integer :account_id
-		t.timestamps
+		t.timestamps null: false
 	end
 	create_table :customer_addresses, force: true do |t|
 		t.string :name
 		t.integer :customer_id
-		t.timestamps
+		t.timestamps null: false
 	end
 	create_table :products, force: true do |t|
 		t.string :name
 		t.integer :account_id
-		t.timestamps
+		t.timestamps null: false
 	end
 	create_table :categories, force: true do |t|
 		t.string :name
 		t.integer :account_id
-		t.timestamps
+		t.timestamps null: false
 	end
 	create_table :category_owners, force: true do |t|
 		t.integer :category_id
 		t.integer :owner_id
 		t.string :owner_type
-		t.timestamps
+		t.timestamps null: false
 	end
 end
 
@@ -102,11 +105,13 @@ class CategoryOwner < ActiveRecord::Base
 	belongs_to :owner, :polymorphic => true
 end
 
-RSpec.configure do |config|
-	config.after(:each) do
-		
-	end
+require_relative '../spec/factories/account'
+require_relative '../spec/factories/customer'
 
+RSpec.configure do |config|
+	config.include FactoryGirl::Syntax::Methods
+	config.after(:each) do
+	end
 	config.expect_with :rspec do |c|
 		c.syntax = :expect
 	end

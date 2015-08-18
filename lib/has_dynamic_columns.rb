@@ -12,6 +12,17 @@ require "has_dynamic_columns/dynamic_column_option"
 require "has_dynamic_columns/dynamic_column_validation"
 require "has_dynamic_columns/dynamic_column_datum"
 
+require "has_dynamic_columns/dynamic_column_boolean_datum"
+require "has_dynamic_columns/dynamic_column_date_datum"
+require "has_dynamic_columns/dynamic_column_datetime_datum"
+require "has_dynamic_columns/dynamic_column_enum_datum"
+require "has_dynamic_columns/dynamic_column_float_datum"
+require "has_dynamic_columns/dynamic_column_integer_datum"
+require "has_dynamic_columns/dynamic_column_string_datum"
+require "has_dynamic_columns/dynamic_column_text_datum"
+require "has_dynamic_columns/dynamic_column_time_datum"
+require "has_dynamic_columns/dynamic_column_timestamp_datum"
+
 module HasDynamicColumns
 end
 

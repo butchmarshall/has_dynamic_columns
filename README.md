@@ -3,6 +3,15 @@ has_dynamic_columns
 
 This plugin gives ActiveRecord models the ability to dynamically define collectable data based on ***has_many*** and ***belongs_to*** relationships.
 
+Release Notes
+============
+
+**0.3.0**
+ - Moved to storing data types in separate tables (where/order now correct!)
+ - Added order.by_dynamic_columns
+ - Improved how joins were built to avoid duplicates
+ - Added ActiveRecord 3 and 4 compatibility
+
 Installation
 ============
 
@@ -14,6 +23,7 @@ The Active Record migration is required to create the has_dynamic_columns table.
 running the following command:
 
     rails generate has_dynamic_columns:active_record
+	rails generate has_dynamic_columns:upgrade_0_3_0_active_record
     rake db:migrate
 
 Usage
@@ -229,3 +239,17 @@ Customer
 ## **has_many** relationship
 
 TODO example.
+
+**Ordering**
+```ruby
+
+# ------------------------------------------------
+# by dynamic column
+# ------------------------------------------------
+
+Customer
+	.order
+		.by_dynamic_columns(country: :asc)
+		.with_scope(Account.find(1))
+
+```

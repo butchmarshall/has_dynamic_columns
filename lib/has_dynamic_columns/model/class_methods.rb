@@ -148,6 +148,7 @@ module HasDynamicColumns
 
 							field_scope_id = (!field_scope.nil?) ? field_scope.id : nil
 							field_scope_type = (!field_scope.nil?) ? field_scope.class.name.constantize.to_s : nil
+
 							dynamic_type = self.name.constantize.to_s
 
 							table = self.name.constantize.arel_table
@@ -158,8 +159,14 @@ module HasDynamicColumns
 								# Don't bother with empty values
 								next if value.to_s.empty?
 
+								column_datum_store_table_type = "HasDynamicColumns::DynamicColumnStringDatum"
+								if !field_scope.nil? && a = field_scope.activerecord_dynamic_columns.where(key: key.to_s).first
+									column_datum_store_table_type = "HasDynamicColumns::DynamicColumn"+a.data_type.to_s.capitalize+"Datum"
+								end
+
 								column_table = HasDynamicColumns::DynamicColumn.arel_table.alias("dynamic_where_"+key.to_s)
 								column_datum_table = HasDynamicColumns::DynamicColumnDatum.arel_table.alias("dynamic_where_data_"+key.to_s)
+								column_datum_store_table = column_datum_store_table_type.constantize.arel_table.alias("dynamic_where_data_store_"+key.to_s)
 
 								# Join on the column with the key
 								on_query = column_table[:key].eq(key)
@@ -189,13 +196,26 @@ module HasDynamicColumns
 																column_datum_table[:owner_type].eq(dynamic_type)
 															).and(
 																column_datum_table[:dynamic_column_id].eq(column_table[:id])
-															).and(
-																column_datum_table[:value].matches("%"+value+"%")
 															)
 														)
 
 								column_table_datum_join = table.create_join(column_datum_table, column_table_datum_join_on)
 								query = query.joins(column_table_datum_join)
+								
+
+								# Join on the actual data
+								column_table_datum_store_join_on = column_datum_store_table
+														.create_on(
+															column_datum_table[:datum_id].eq(column_datum_store_table[:id]).and(
+																column_datum_table[:datum_type].eq(column_datum_store_table_type)
+															).and(
+																column_datum_store_table[:value].matches("%"+value+"%")
+															)
+														)
+		
+								column_table_datum_store_join = table.create_join(column_datum_store_table, column_table_datum_store_join_on)
+
+								query = query.joins(column_table_datum_store_join)
 							}
 							# Group required - we have many rows
 							query = (query.nil?)? group(table[:id]) : query.group(table[:id])
