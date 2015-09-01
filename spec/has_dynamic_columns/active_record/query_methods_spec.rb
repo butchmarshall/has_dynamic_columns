@@ -42,6 +42,7 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 		}
 		customer.save
 	end
+
 	context 'Customer' do
 		it 'should order by first_name' do
 			table = Customer.arel_table
@@ -249,4 +250,12 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 			expect(result).to eq([["1", 30, "Butch", "Casidy"], ["2", 30, "Butch", "Marshall"], ["1", 10, "George", "Marshall"]])
 		end
 	end
+
+	context 'ActiveRecord' do
+		it 'should not clobber where IN queries' do
+			sql = Account.where("id IN (?)", [1,2,3]).to_sql
+			expect(sql).to eq('SELECT "accounts".* FROM "accounts" WHERE (id IN (1,2,3))')
+		end
+	end
+
 end

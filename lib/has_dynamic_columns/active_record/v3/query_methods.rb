@@ -226,7 +226,7 @@ module HasDynamicColumns
 				if opts == :chain
 					::ActiveRecord::QueryMethods::WhereChain.new(clone)
 				else
-					where_without_dynamic_columns(opts, rest)
+					where_without_dynamic_columns(opts, *rest)
 				end
 			end
 

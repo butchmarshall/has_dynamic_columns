@@ -202,7 +202,7 @@ module HasDynamicColumns
 					chain = ::ActiveRecord::QueryMethods::WhereChain.new(scope)
 					chain.send(:extend, WhereChainCompatibility)
 				else
-					where_without_dynamic_columns(opts, rest)
+					where_without_dynamic_columns(opts, *rest)
 				end
 			end
 
