@@ -1,3 +1,5 @@
+[![Gem Version](https://badge.fury.io/rb/has_dynamic_columns.svg)](http://badge.fury.io/rb/has_dynamic_columns)
+
 has_dynamic_columns
 ============
 
