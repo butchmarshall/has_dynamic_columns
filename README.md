@@ -1,4 +1,5 @@
 [![Gem Version](https://badge.fury.io/rb/has_dynamic_columns.svg)](http://badge.fury.io/rb/has_dynamic_columns)
+[![Build Status](https://travis-ci.org/butchmarshall/has_dynamic_columns.svg?branch=master)](https://travis-ci.org/butchmarshall/has_dynamic_columns)
 
 has_dynamic_columns
 ============
