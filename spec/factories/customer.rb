@@ -25,6 +25,8 @@ FactoryGirl.define do
 				else
 					"#{evaluator.index } - #{i.data_type}"
 				end
+
+				hash[i.key.to_s] = [hash[i.key.to_s]]if i.multiple
 			}
 			customer.fields = hash
 

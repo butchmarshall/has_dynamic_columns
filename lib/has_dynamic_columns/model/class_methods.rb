@@ -242,28 +242,52 @@ module HasDynamicColumns
 						def #{configuration[:as]}=data
 							data.each_pair { |key, value|
 								# We dont play well with this key
-								if !self.storable_#{configuration[:as].to_s.singularize}_key?(key)
-									raise NoMethodError
-								end
+								raise NoMethodError.new "This key isn't storable" if !self.storable_#{configuration[:as].to_s.singularize}_key?(key)
+
 								dynamic_column = self.#{configuration[:as].to_s.singularize}_key_to_dynamic_column(key)
 
-								# We already have this key in database
-								if existing = self.activerecord_dynamic_column_data.select { |i| i.dynamic_column == dynamic_column }.first
-									existing.value = value
-								else
-									self.activerecord_dynamic_column_data.build(:dynamic_column => dynamic_column, :value => value)
-								end
+								# Expecting array data type
+								raise ArgumentError.new "Multiple columns must be passed arrays" if dynamic_column.multiple && !value.is_a?(Array)
+
+								# Treat everything as an array - makes building easier
+								value = [value] if !value.is_a?(Array)
+
+								# Loop each value - sets existing data or builds a new data node
+								existing = self.activerecord_dynamic_column_data.select { |i| i.dynamic_column == dynamic_column }
+								value.each_with_index { |datum, datum_index|
+									if existing[datum_index]
+										# Undelete this node if its now needed
+										existing[datum_index].reload if existing[datum_index].marked_for_destruction?
+										existing[datum_index].value = datum
+									# No existing placeholder - build a new one
+									else
+										self.activerecord_dynamic_column_data.build(:dynamic_column => dynamic_column, :value => datum)
+									end
+								}
+
+								# Any record no longer needed should be marked for destruction
+								existing.each_with_index { |i,index|
+									if index > value.length
+										i.mark_for_destruction
+									end
+								}
 							}
 						end
 
 						def #{configuration[:as]}
 							h = {}
 							self.field_scope_#{configuration[:as]}.each { |i|
-								h[i.key] = nil
+								h[i.key] = (i.multiple)? [] : nil
 							}
 
 							self.activerecord_dynamic_column_data.each { |i|
-								h[i.dynamic_column.key] = i.value unless !i.dynamic_column || !h.has_key?(i.dynamic_column.key)
+								if i.dynamic_column && h.has_key?(i.dynamic_column.key)
+									if i.dynamic_column.multiple
+										h[i.dynamic_column.key] << i.value
+									else
+										h[i.dynamic_column.key] = i.value
+									end
+								end
 							}
 
 							h

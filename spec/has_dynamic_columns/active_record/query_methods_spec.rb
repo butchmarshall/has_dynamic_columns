@@ -44,14 +44,63 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 	end
 
 	context 'Customer' do
-		it 'should order by first_name' do
+		it 'should store, retrieve, and search array data', :focus => true do
 			table = Customer.arel_table
 
+			customer = Customer.new(:account => account, :name => "1")
+			customer.fields = {
+				"first_name" => "Butch",
+				"last_name" => "Marshall",
+				"email" => "butch.marshall@unittest.com",
+				"trusted" => false,
+				"last_contacted" => DateTime.parse("2012-01-01 01:01:01"),
+				"total_purchases" => 10,
+				"tags" => [
+					"a", "b", "c"
+				]
+			}
+			customer.save
+
+			customer = Customer.new(:account => account, :name => "1")
+			customer.fields = {
+				"first_name" => "Merridyth",
+				"last_name" => "Marshall",
+				"email" => "merridyth.marshall@unittest.com",
+				"trusted" => false,
+				"last_contacted" => DateTime.parse("2014-05-01 01:01:01"),
+				"total_purchases" => 10,
+				"tags" => [
+					"c", "d", "e"
+				]
+			}
+			customer.save
+
+			result = Customer.where
+					.has_dynamic_columns(table[:tags].eq("e"))
+					.with_scope(account)
+			expect(result.length).to eq(1)
+
+			result = Customer.where
+					.has_dynamic_columns(table[:tags].eq("c"))
+					.with_scope(account)
+			expect(result.length).to eq(2)
+
+			result = Customer.where
+					.has_dynamic_columns(
+						table[:tags].eq("c").and(
+							table[:first_name].eq("Butch")
+						)
+					)
+					.with_scope(account)
+			expect(result.length).to eq(1)
+		end
+
+		it 'should order by first_name' do
 			result = Customer
 				.order
 					.by_dynamic_columns(first_name: :desc)
 					.with_scope(account)
-				.collect { |i|
+			.collect { |i|
 				json = i.as_json(:root => nil)
 				[json["name"], json["fields"]["first_name"], json["fields"]["last_name"]]
 			}
@@ -253,7 +302,7 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 
 	context 'ActiveRecord' do
 		it 'should not clobber where IN queries' do
-			sql = Account.where("id IN (?)", [1,2,3]).to_sql
+			sql = Account.where("id IN (?)", [1,2,3]).to_sql.gsub(/\s\s/,' ')
 			expect(sql).to eq('SELECT "accounts".* FROM "accounts" WHERE (id IN (1,2,3))')
 		end
 	end
