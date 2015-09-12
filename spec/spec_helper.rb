@@ -23,15 +23,21 @@ end
 # Add this directory so the ActiveSupport autoloading works
 ActiveSupport::Dependencies.autoload_paths << File.dirname(__FILE__)
 
-# Used to test interactions between DJ and an ORM
-ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
+if RUBY_PLATFORM == 'java'
+	ActiveRecord::Base.establish_connection :adapter => 'jdbcsqlite3', :database => ':memory:'
+else
+	ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
+end
+
 ActiveRecord::Migration.verbose = false
 
 require "generators/has_dynamic_columns/templates/migration"
 require "generators/has_dynamic_columns/templates/migration_0.3.0"
+require "generators/has_dynamic_columns/templates/migration_0.3.4"
 ActiveRecord::Schema.define do
 	AddHasDynamicColumns.up
 	Upgrade030HasDynamicColumns.up
+	Upgrade034HasDynamicColumns.up
 
 	create_table :accounts, force: true do |t|
 		t.string :name
