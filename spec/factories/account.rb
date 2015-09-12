@@ -13,6 +13,8 @@ FactoryGirl.define do
 			account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "last_contacted", :data_type => "datetime")
 			account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "total_purchases", :data_type => "integer")
 			account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "tags", :data_type => "string", :multiple => true)
+			account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "address", :data_type => "model", :class_name => "CustomerAddress", :column_name => "name")
+			account.activerecord_dynamic_columns.build(:dynamic_type => "Customer", :key => "products", :data_type => "model", :multiple => true)
 		end
 	end
 

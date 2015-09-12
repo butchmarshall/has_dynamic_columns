@@ -34,10 +34,12 @@ ActiveRecord::Migration.verbose = false
 require "generators/has_dynamic_columns/templates/migration"
 require "generators/has_dynamic_columns/templates/migration_0.3.0"
 require "generators/has_dynamic_columns/templates/migration_0.3.4"
+require "generators/has_dynamic_columns/templates/migration_0.3.5"
 ActiveRecord::Schema.define do
 	AddHasDynamicColumns.up
 	Upgrade030HasDynamicColumns.up
 	Upgrade034HasDynamicColumns.up
+	Upgrade035HasDynamicColumns.up
 
 	create_table :accounts, force: true do |t|
 		t.string :name

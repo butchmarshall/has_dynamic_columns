@@ -229,9 +229,9 @@ module HasDynamicColumns
 
 							@@has_dynamic_columns_configurations.each { |config|
 								if !options[:root].nil?
-									json[options[:root]][config[:as].to_s] = self.send(config[:as].to_s)
+									json[options[:root]][config[:as].to_s] = self.send(config[:as].to_s, true)
 								else
-									json[config[:as].to_s] = self.send(config[:as].to_s)
+									json[config[:as].to_s] = self.send(config[:as].to_s, true)
 								end
 							}
 
@@ -274,7 +274,7 @@ module HasDynamicColumns
 							}
 						end
 
-						def #{configuration[:as]}
+						def #{configuration[:as]}(as_json = false)
 							h = {}
 							self.field_scope_#{configuration[:as]}.each { |i|
 								h[i.key] = (i.multiple)? [] : nil
@@ -282,10 +282,13 @@ module HasDynamicColumns
 
 							self.activerecord_dynamic_column_data.each { |i|
 								if i.dynamic_column && h.has_key?(i.dynamic_column.key)
+									v = i.value
+									v = v.as_json(:root => nil) if as_json && v.respond_to?(:as_json)
+
 									if i.dynamic_column.multiple
-										h[i.dynamic_column.key] << i.value
+										h[i.dynamic_column.key] << v
 									else
-										h[i.dynamic_column.key] = i.value
+										h[i.dynamic_column.key] = v
 									end
 								end
 							}
@@ -298,25 +301,33 @@ module HasDynamicColumns
 						end
 
 						def field_scope_#{configuration[:as]}
+							obj = self.get_#{configuration[:as]}_field_scope
+
 							# has_many relationship
-							if self.get_#{configuration[:as]}_field_scope.respond_to?(:select) && self.get_#{configuration[:as]}_field_scope.respond_to?(:collect)
-								self.get_#{configuration[:as]}_field_scope.collect { |i|
-									i.send("activerecord_dynamic_columns")
+							if obj.respond_to?(:select) && obj.respond_to?(:collect)
+								obj.collect { |i|
+									i.send("activerecord_dynamic_columns") if i.respond_to?(:activerecord_dynamic_columns)
 								}.flatten.select { |i|
 									i.dynamic_type.to_s.empty? || i.dynamic_type.to_s == self.class.to_s
 								}
 							# belongs_to relationship
-							else
-								self.get_#{configuration[:as]}_field_scope.send("activerecord_dynamic_columns").select { |i|
+							elsif obj.respond_to?(:activerecord_dynamic_columns)
+								obj.send("activerecord_dynamic_columns").select { |i|
 									# Only get things with no dynamic type defined or dynamic types defined as this class
 									i.dynamic_type.to_s.empty? || i.dynamic_type.to_s == self.class.to_s
 								}
+							else
+								[]
 							end
 						end
 
 					protected
 						def get_#{configuration[:as]}_field_scope
+							# Sometimes association doesnt exist
+							begin
 							#{configuration[:field_scope]}
+							rescue
+							end
 						end
 
 						# Whether this is storable

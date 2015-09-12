@@ -41,8 +41,10 @@ module HasDynamicColumns
 							col_name = rel.left.name
 							dynamic_type = rel.left.relation.engine.to_s
 
-							rel.left.relation = dynamic_column_build_arel_joins(col_name, dynamic_type, scope, index+1, joins)[:table] # modify the where to use the aliased table
-							rel.left.name = :value # value is the data storage column searchable on dynamic_column_data table
+							res = dynamic_column_build_arel_joins(col_name, dynamic_type, scope, index+1, joins) # modify the where to use the aliased table
+
+							rel.left.relation = res[:table]
+							rel.left.name = res[:column] || :value # value is the data storage column searchable on dynamic_column_data table
 						end
 					end
 
@@ -119,9 +121,32 @@ module HasDynamicColumns
 						column_table_datum_store_join = table.create_join(column_datum_store_table, column_table_datum_store_join_on, join_scope_type)
 						self.joins_values += [column_table_datum_store_join]
 
+						column_name = :value
+
+						# If this dynamic column points to another model we need to join on that table
+						if !field_scope.nil? && assoc = field_scope.activerecord_dynamic_columns.where(data_type: "model", key: col_name).first
+							assoc_table = assoc.class_name.constantize.arel_table.alias("dynamic_where_associated_data_#{index}_#{col_name}")
+							
+							join_on = assoc_table.create_on(
+													column_datum_store_table[:value_id].eq(assoc_table[:id]).and(
+														column_datum_store_table[:value_type].eq(assoc.class_name)
+													)
+												)
+							join = table.create_join(assoc_table, join_on)
+							self.joins_values += [join]
+
+							column_table_datum_store_join = join
+							column_datum_store_table = assoc_table
+							column_name = assoc.column_name.to_sym
+						end
+
+						# Track the joins
+						# - So they can be referenced later
+						# - So we don't make more joins than we have to
 						joins[joins_scope_key][col_name] = {
 							:join => column_table_datum_store_join,
-							:table => column_datum_store_table
+							:table => column_datum_store_table,
+							:column => column_name
 						}
 
 						joins[joins_scope_key][col_name]

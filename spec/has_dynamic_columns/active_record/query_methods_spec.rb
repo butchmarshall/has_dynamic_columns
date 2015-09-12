@@ -44,7 +44,7 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 	end
 
 	context 'Customer' do
-		it 'should store, retrieve, and search array data', :focus => true do
+		it 'should store, retrieve, and search array data' do
 			table = Customer.arel_table
 
 			customer = Customer.new(:account => account, :name => "1")
@@ -145,7 +145,7 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 			expect(result).to eq([["2", "Butch", "Marshall"], ["1", "Butch", "Casidy"], ["1", "George", "Marshall"]])
 		end
 
-		it 'should order by dynamic and regular columns', :focus => true do
+		it 'should order by dynamic and regular columns' do
 			table = Customer.arel_table
 
 			result = Customer

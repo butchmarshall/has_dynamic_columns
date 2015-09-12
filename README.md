@@ -9,6 +9,13 @@ This plugin gives ActiveRecord models the ability to dynamically define collecta
 Release Notes
 ============
 
+**0.3.5**
+ - Added model storage type (for storing association with other activerecord objects)
+
+**0.3.4**
+ - Can now store array of data
+ - JRuby support
+
 **0.3.0**
  - Moved to storing data types in separate tables (where/order now correct!)
  - Added order.by_dynamic_columns
@@ -27,6 +34,7 @@ running the following command:
 
     rails generate has_dynamic_columns:active_record
 	rails generate has_dynamic_columns:upgrade_0_3_0_active_record
+	rails generate has_dynamic_columns:upgrade_0_3_4_active_record
     rake db:migrate
 
 Usage

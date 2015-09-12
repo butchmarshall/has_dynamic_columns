@@ -16,7 +16,7 @@ describe HasDynamicColumns::DynamicColumnIntegerDatum do
 			}
 			customer.save
 			json = customer.as_json(:root => nil)
-			expect(json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>nil, "trusted"=>true, "last_contacted"=>nil, "total_purchases"=>123654, "tags" => []})
+			expect(json["fields"]).to eq({"first_name"=>"Butch", "last_name"=>"Marshall", "email"=>nil, "trusted"=>true, "last_contacted"=>nil, "total_purchases"=>123654, "tags" => [], "address"=>nil, "products"=>[]})
 		end
 
 		context 'where.has_dynamic_columns' do

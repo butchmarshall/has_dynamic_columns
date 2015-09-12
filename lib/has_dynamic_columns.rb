@@ -22,6 +22,7 @@ require "has_dynamic_columns/dynamic_column_string_datum"
 require "has_dynamic_columns/dynamic_column_text_datum"
 require "has_dynamic_columns/dynamic_column_time_datum"
 require "has_dynamic_columns/dynamic_column_timestamp_datum"
+require "has_dynamic_columns/dynamic_column_model_datum"
 
 module HasDynamicColumns
 end

@@ -22,6 +22,8 @@ FactoryGirl.define do
 					DateTime.now.change(hour: evaluator.index)
 				when 'boolean'
 					true
+				when 'model'
+					nil
 				else
 					"#{evaluator.index } - #{i.data_type}"
 				end
