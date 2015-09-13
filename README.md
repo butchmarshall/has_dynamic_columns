@@ -35,6 +35,7 @@ running the following command:
     rails generate has_dynamic_columns:active_record
 	rails generate has_dynamic_columns:upgrade_0_3_0_active_record
 	rails generate has_dynamic_columns:upgrade_0_3_4_active_record
+	rails generate has_dynamic_columns:upgrade_0_3_5_active_record
     rake db:migrate
 
 Usage
