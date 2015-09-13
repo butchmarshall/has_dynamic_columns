@@ -38,13 +38,15 @@ module HasDynamicColumns
 							rel.expr.name = :value
 						# We can work with this
 						else
-							col_name = rel.left.name
-							dynamic_type = rel.left.relation.engine.to_s
+							if rel.left.relation.respond_to?(:engine)
+								col_name = rel.left.name
+								dynamic_type = rel.left.relation.engine.to_s
 
-							res = dynamic_column_build_arel_joins(col_name, dynamic_type, scope, index+1, joins) # modify the where to use the aliased table
+								res = dynamic_column_build_arel_joins(col_name, dynamic_type, scope, index+1, joins) # modify the where to use the aliased table
 
-							rel.left.relation = res[:table]
-							rel.left.name = res[:column] || :value # value is the data storage column searchable on dynamic_column_data table
+								rel.left.relation = res[:table]
+								rel.left.name = res[:column] || :value # value is the data storage column searchable on dynamic_column_data table
+							end
 						end
 					end
 
@@ -154,17 +156,14 @@ module HasDynamicColumns
 
 					# Builds all the joins required for the dynamic columns in the where/order clauses
 					def build_dynamic_column_joins
-						joins = {}
+						joins = self.joins_dynamic_columns
 
 						self.where_dynamic_columns_values.each_with_index { |dynamic_scope, index_outer|
 							dynamic_scope[:where].each_with_index { |rel, index_inner|
 								# Process each where
 								dynamic_column_process_arel_nodes(rel, dynamic_scope[:scope], (index_outer*1000)+(index_inner*10000), joins)
 
-								# Warning
-								# Must cast rel to a string - I've encountered ***strange*** situations where this will change the 'col_name' to value in the where clause
-								# specifically, the test 'case should restrict if scope specified' will fail
-								self.where_values += [rel.to_sql]
+								self.where_values += [rel]
 							}
 						}
 						self.order_dynamic_columns_values.each_with_index { |dynamic_scope, index_outer|
