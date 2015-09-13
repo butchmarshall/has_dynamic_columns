@@ -285,6 +285,9 @@ module HasDynamicColumns
 									v = i.value
 									v = v.as_json(:root => nil) if as_json && v.respond_to?(:as_json)
 
+									# If a specific column is used, use it in the as_json method
+									v = v[i.dynamic_column.column_name] if as_json && v && v.is_a?(Hash) && !i.dynamic_column.column_name.to_s.empty?
+
 									if i.dynamic_column.multiple
 										h[i.dynamic_column.key] << v
 									else

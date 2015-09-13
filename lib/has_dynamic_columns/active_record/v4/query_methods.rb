@@ -54,12 +54,12 @@ module HasDynamicColumns
 				end
 			end
 
-			def order_with_dynamic_columns(opts = :chain)
+			def order_with_dynamic_columns(*args)
 				# Chain - by_dynamic_columns
-				if opts == :chain
+				if args.empty?
 					::ActiveRecord::QueryMethods::OrderChain.new(spawn)
 				else
-					order_without_dynamic_columns(opts)
+					order_without_dynamic_columns(*args)
 				end
 			end
 		end

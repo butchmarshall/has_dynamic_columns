@@ -6,6 +6,12 @@ module HasDynamicColumns
 			def self.included(base)
 				base.class_eval do
 					# Collect all where clauses
+					def joins_dynamic_columns
+						@values[:joins_dynamic_columns] = @values[:joins_dynamic_columns] || {}
+						@values[:joins_dynamic_columns]
+					end
+
+					# Collect all where clauses
 					def where_dynamic_columns_values
 						@values[:where_dynamic_columns_values] || []
 					end

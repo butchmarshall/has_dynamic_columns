@@ -25,11 +25,11 @@ describe HasDynamicColumns::DynamicColumnModelDatum do
 			customer.save
 			json = customer.as_json(:root => nil)
 
-			expect(json["fields"]["address"]["name"]).to eq("1796 18th St, San Francisco, CA 94107, United States")
+			expect(json["fields"]["address"]).to eq("1796 18th St, San Francisco, CA 94107, United States")
 			expect(json["fields"]["products"].length).to eq(5)
 			# Each of the products should be json
 			json["fields"]["products"].each_with_index { |i, index|
-				expect(i["name"]).to eq("P#{index+1}")
+				expect(i).to eq("P#{index+1}")
 			}
 		end
 
@@ -112,7 +112,7 @@ describe HasDynamicColumns::DynamicColumnModelDatum do
 					)
 					.with_scope(account)
 			expect(result.length).to eq(2)
-			expect(result.first.as_json["fields"]["address"]["name"]).to eq("1600 Amphitheatre Pkwy, Mountain View, CA 94043, United States")
+			expect(result.first.as_json["fields"]["address"]).to eq("1600 Amphitheatre Pkwy, Mountain View, CA 94043, United States")
 		end
 	end
 end

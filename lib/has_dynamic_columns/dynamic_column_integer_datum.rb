@@ -1,5 +1,5 @@
 module HasDynamicColumns
 	class DynamicColumnIntegerDatum < ::ActiveRecord::Base
-		belongs_to :dynamic_column_datum, :class_name => "HasDynamicColumns::DynamicColumnDatum"
+		has_one :dynamic_column_datum, :as => :datum
 	end
 end

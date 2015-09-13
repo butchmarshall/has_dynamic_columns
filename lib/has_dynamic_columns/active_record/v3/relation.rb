@@ -3,7 +3,13 @@ module HasDynamicColumns
 		module Relation
 			def self.included(base)
 				base.class_eval do
-					attr_accessor :where_dynamic_columns_values, :order_dynamic_columns_values
+					attr_accessor :where_dynamic_columns_values, :order_dynamic_columns_values, :joins_dynamic_columns
+
+					# Collect all previously built join clauses
+					def joins_dynamic_columns
+						@joins_dynamic_columns = @joins_dynamic_columns || {}
+						@joins_dynamic_columns
+					end
 
 					# Collect all where clauses
 					def where_dynamic_columns_values
