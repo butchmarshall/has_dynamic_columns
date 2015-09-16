@@ -58,6 +58,7 @@ module HasDynamicColumns
 					# index - unique table identifier
 					# joins - list of joins processed (to prevent duplicates)
 					def dynamic_column_build_arel_joins(col_name, dynamic_type, scope, index, joins)
+						col_name = col_name.to_s
 						field_scope = scope
 						field_scope_id = (!field_scope.nil?) ? field_scope.id : nil
 						field_scope_type = (!field_scope.nil?) ? field_scope.class.name.constantize.to_s : nil
