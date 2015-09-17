@@ -20,6 +20,9 @@ module HasDynamicColumns
 						@where_dynamic_columns_values ||= []
 						@where_dynamic_columns_values << values
 					end
+					def where_dynamic_columns_values_reset
+						@where_dynamic_columns_values = []
+					end
 
 					# Collect all order clauses
 					def order_dynamic_columns_values
@@ -29,6 +32,9 @@ module HasDynamicColumns
 						raise ImmutableRelation if @loaded
 						@order_dynamic_columns_values ||= []
 						@order_dynamic_columns_values << values
+					end
+					def order_dynamic_columns_values_reset
+						@order_dynamic_columns_values = []
 					end
 				end
 

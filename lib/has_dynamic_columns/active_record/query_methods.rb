@@ -187,6 +187,9 @@ module HasDynamicColumns
 					self.group_values += [Arel::Nodes::Group.new(table[:id])]
 				end
 
+				self.where_dynamic_columns_values_reset
+				self.order_dynamic_columns_values_reset
+
 				build_arel_without_dynamic_columns
 			end
 

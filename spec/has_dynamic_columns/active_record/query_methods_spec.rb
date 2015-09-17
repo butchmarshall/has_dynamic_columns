@@ -226,17 +226,33 @@ describe ::HasDynamicColumns::ActiveRecord::QueryMethods do
 			expect(result).to eq([["1", "George", "Marshall"], ["1", "Butch", "Casidy"], ["2", "Butch", "Marshall"]])
 		end
 
-		it 'should filter and order by the same column properly and not throw ambiguous column name errors' do
+		it 'should filter and order by the same column properly and not throw ambiguous column name errors', :focus => true do
+			customer = Customer.new(:account => account, :name => "1")
+			customer.fields = {
+				"first_name" => "Carlos",
+				"last_name" => "Marshall",
+				"email" => "butch.marshall@unittest.com",
+				"trusted" => false,
+				"last_contacted" => DateTime.parse("2012-01-01 01:01:01"),
+				"total_purchases" => 10,
+				"tags" => [
+					"a", "b", "c"
+				]
+			}
+			customer.save
+
 			result = Customer
 				.where
 					.has_dynamic_columns(
-						:first_name => "A"
+						:first_name => "Carlos"
 					)
 					.with_scope(account)
 				.order
 					.by_dynamic_columns(first_name: :desc)
 					.with_scope(account)
 			expect{ActiveRecord::Base.connection.select_all(result.to_sql)}.to_not raise_error
+
+			expect(result.all.length).to eq(1)
 		end
 
 		it 'should preserve order by multiple dynamic columns' do
